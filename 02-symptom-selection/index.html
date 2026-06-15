@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MedINTEL — New Case · Symptom Selection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #be6d32;
+    --primary-tint: #f8efe7;
+    --primary-tint-2: #f2e2d4;
+    --cream: #fbfaf6;
+    --white: #ffffff;
+    --ink: #1f1f1f;
+    --secondary: #6b6761;
+    --muted: #b7b1a8;
+    --border: #e7e1d8;
+    --border-soft: rgba(239, 234, 227, 0.5);
+    --border-card: rgba(231, 225, 216, 0.4);
+    --danger: #9e3a2d;
+    --disabled-bg: #f2f1ee;
+    --shadow-sm: 0px 1px 2px -1px rgba(18,26,43,0.1), 0px 1px 2px 0px rgba(18,26,43,0.06);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --sf: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
+    --inter: "Inter", -apple-system, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--inter);
+    background: #e9e6df;
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex; justify-content: center;
+    padding: 40px 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .drawer {
+    background: var(--white);
+    width: 100%;
+    max-width: 736px;
+    border-radius: 18px;
+    padding: 32px 24px;
+    display: flex; flex-direction: column; gap: 24px;
+    box-shadow: 0 24px 70px rgba(31,29,26,0.18);
+    align-self: flex-start;
+  }
+
+  /* ── Header ── */
+  .head {
+    border-bottom: 1px solid var(--border-soft);
+    padding: 0 24px 20px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .head-row { display: flex; gap: 16px; align-items: center; }
+  .head-row .titles { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .head h1 { font-family: var(--sf); font-size: 20px; font-weight: 510; letter-spacing: -0.2px; }
+  .head p { font-size: 14px; color: var(--secondary); }
+  .close {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--cream); border: 1px solid rgba(239,234,227,0.3);
+    display: grid; place-items: center; cursor: pointer; color: var(--secondary);
+    transition: background .2s var(--ease), transform .2s var(--ease);
+  }
+  .close:hover { background: #f1ece4; transform: rotate(90deg); }
+
+  .tabs {
+    display: flex; gap: 8px;
+    background: var(--cream); border: 1px solid var(--border-soft);
+    border-radius: 12px; padding: 4px; height: 48px;
+  }
+  .tab {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    border-radius: 12px; font-size: 14px; cursor: pointer; border: none; background: transparent;
+    font-family: var(--inter); color: var(--muted); font-weight: 400;
+    transition: all .3s var(--ease);
+  }
+  .tab.active { background: var(--white); color: var(--ink); font-weight: 500; box-shadow: var(--shadow-sm); }
+
+  /* ── Section cards ── */
+  .section {
+    background: var(--cream); border: 1px solid var(--border-soft);
+    border-radius: 12px; padding: 16px 12px 12px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .section-head { display: flex; gap: 16px; align-items: center; }
+  .section-head .titles { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .section-head h2 { font-family: var(--sf); font-size: 18px; font-weight: 510; }
+  .section-head .sub { font-size: 13px; color: var(--secondary); }
+  .count-badge {
+    font-size: 12px; font-weight: 600; color: var(--primary);
+    background: var(--primary-tint); border: 1px solid var(--primary-tint-2);
+    padding: 3px 10px; border-radius: 20px; min-width: 26px; text-align: center;
+    opacity: 0; transform: scale(0.7); transition: all .3s var(--pop);
+  }
+  .count-badge.show { opacity: 1; transform: scale(1); }
+
+  .panel {
+    background: var(--white); border: 1px solid var(--border-card);
+    border-radius: 12px; padding: 20px;
+    display: flex; flex-direction: column; gap: 24px;
+  }
+
+  /* ── Inputs ── */
+  .rows { display: flex; flex-direction: column; gap: 24px; }
+  .row { display: flex; gap: 24px; }
+  .field { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .field label { font-family: var(--sf); font-size: 14px; font-weight: 510; color: var(--ink); }
+  .field label .hint { font-family: var(--sf); font-weight: 400; font-size: 12px; color: var(--muted); }
+  .control {
+    height: 44px; background: var(--cream);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 0 16px; font-family: var(--inter); font-size: 13px; color: var(--ink);
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  input.control { outline: none; }
+  input.control::placeholder { color: var(--muted); }
+  .control:focus, .control.open, input.control:focus {
+    border-color: var(--primary); box-shadow: 0 0 0 3px rgba(190,109,50,0.1);
+  }
+  .control.disabled { background: var(--disabled-bg); color: var(--muted); cursor: not-allowed; }
+
+  /* custom select */
+  .select { position: relative; cursor: pointer; user-select: none; }
+  .select .value { flex: 1; color: var(--muted); }
+  .select .value.filled { color: var(--ink); }
+  .select .chev { width: 20px; height: 20px; color: var(--secondary); transition: transform .25s var(--ease); }
+  .select.open .chev { transform: rotate(180deg); }
+  .menu {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 20;
+    background: var(--white); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(31,29,26,0.12); padding: 6px; overflow: hidden;
+    opacity: 0; transform: translateY(-6px) scale(0.98); pointer-events: none;
+    transition: all .22s var(--ease); max-height: 220px; overflow-y: auto;
+  }
+  .select.open .menu { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+  .opt {
+    padding: 9px 12px; border-radius: 7px; font-size: 13px; color: var(--secondary);
+    cursor: pointer; transition: background .15s, color .15s;
+  }
+  .opt:hover { background: var(--cream); color: var(--ink); }
+  .opt.sel { background: var(--primary-tint); color: var(--primary); font-weight: 500; }
+
+  /* ── Extract Blood ── */
+  .btn-outline-danger {
+    background: var(--white); border: 1px solid rgba(158,58,45,0.5);
+    color: var(--danger); font-size: 12px; font-weight: 500; font-family: var(--inter);
+    padding: 6px 8px; border-radius: 8px; cursor: pointer; white-space: nowrap;
+    transition: background .2s var(--ease), transform .2s var(--ease);
+  }
+  .btn-outline-danger:hover { background: #fdf3f1; }
+  .btn-outline-danger:active { transform: scale(0.97); }
+  .uploader {
+    background: var(--cream); border: 1px dashed var(--border); border-radius: 10px;
+    min-height: 52px; padding: 16px 24px; display: flex; align-items: center; justify-content: center;
+    gap: 8px; font-size: 14px; color: var(--muted); text-align: center;
+    transition: all .3s var(--ease);
+  }
+  .uploader.done { border-style: solid; border-color: rgba(158,58,45,0.4); background: #fdf6f4; color: var(--danger); }
+  .uploader .drop { color: #d4584a; display: inline-flex; }
+
+  /* ── Symptom chips ── */
+  .chips { display: flex; flex-wrap: wrap; gap: 12px; }
+  .chip {
+    height: 32px; padding: 0 16px; border-radius: 100px;
+    background: var(--cream); border: 1px solid var(--border);
+    font-size: 13px; color: var(--secondary); font-family: var(--inter);
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+    transition: background .25s var(--ease), border-color .25s var(--ease), color .25s var(--ease), transform .15s var(--ease);
+    white-space: nowrap;
+  }
+  .chip:hover { border-color: var(--primary); color: var(--primary); }
+  .chip:active { transform: scale(0.95); }
+  .chip .check {
+    width: 0; height: 14px; overflow: hidden; opacity: 0;
+    display: inline-flex; align-items: center;
+    transition: width .25s var(--ease), opacity .2s var(--ease);
+  }
+  .chip.selected {
+    background: var(--primary); border-color: var(--primary); color: var(--white); font-weight: 500;
+    animation: chipPop .3s var(--pop);
+  }
+  .chip.selected:hover { color: var(--white); }
+  .chip.selected .check { width: 16px; opacity: 1; }
+  .chip .remove {
+    width: 0; opacity: 0; overflow: hidden; display: inline-flex; align-items: center;
+    margin-left: 0; transition: width .25s var(--ease), opacity .2s, margin-left .25s;
+  }
+  .chip.custom.selected .remove { width: 14px; opacity: 0.9; margin-left: 2px; }
+  .chip.custom .remove:hover { opacity: 1; }
+  @keyframes chipPop { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
+  @keyframes chipIn { from { opacity: 0; transform: scale(0.8) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .chip.entering { animation: chipIn .35s var(--pop); }
+
+  /* Add symptom */
+  .add-group { display: flex; flex-direction: column; gap: 8px; }
+  .add-group > .lbl { font-family: var(--sf); font-size: 14px; font-weight: 510; }
+  .add-group > .lbl .hint { font-family: var(--sf); font-weight: 400; font-size: 12px; color: var(--muted); }
+  .add-row { display: flex; gap: 8px; }
+  .add-row input { flex: 1; height: 40px; }
+  .add-btn {
+    height: 40px; padding: 0 12px; border-radius: 8px;
+    background: var(--cream); border: 1px solid var(--primary); color: var(--primary);
+    font-family: var(--inter); font-weight: 500; font-size: 14px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: background .2s var(--ease), transform .15s var(--ease);
+  }
+  .add-btn:hover { background: var(--primary-tint); }
+  .add-btn:active { transform: scale(0.96); }
+
+  .info-group { display: flex; flex-direction: column; gap: 8px; }
+  .info-group label { font-family: var(--sf); font-size: 14px; font-weight: 510; }
+  textarea.control {
+    height: 95px; padding: 16px; resize: none; align-items: flex-start;
+    line-height: 18px; font-family: var(--inter);
+  }
+
+  /* ── Run button ── */
+  .run-btn {
+    height: 48px; border-radius: 8px; background: var(--primary);
+    border: 1px solid rgba(190,109,50,0.3); color: var(--white);
+    font-family: var(--sf); font-weight: 510; font-size: 14px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: filter .2s var(--ease), transform .15s var(--ease), box-shadow .2s var(--ease);
+  }
+  .run-btn:hover { filter: brightness(1.06); box-shadow: 0 8px 22px rgba(190,109,50,0.28); }
+  .run-btn:active { transform: scale(0.99); }
+  .run-btn.loading { pointer-events: none; opacity: 0.9; }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none;
+  }
+  .run-btn.loading .spinner { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: #fff; padding: 14px 20px; border-radius: 12px;
+    font-size: 13.5px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); opacity: 0; pointer-events: none;
+    transition: all .35s var(--pop); max-width: 90vw; z-index: 100;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+  .toast b { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="drawer">
+
+  <!-- Header -->
+  <div class="head">
+    <div class="head-row">
+      <div class="titles">
+        <h1>New Case</h1>
+        <p>Enter the details below to add a case.</p>
+      </div>
+      <button class="close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="tabs">
+      <button class="tab active">Add New Case</button>
+      <button class="tab">Add to existing diagnosis</button>
+    </div>
+  </div>
+
+  <!-- Patient Information -->
+  <div class="section">
+    <div class="section-head">
+      <div class="titles">
+        <h2>Patient Information</h2>
+        <span class="sub">Enter the patient's basic details to add a case.</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="rows">
+        <div class="row">
+          <div class="field">
+            <label>Case ID <span class="hint">(auto populate)</span></label>
+            <div class="control disabled">MED-0049</div>
+          </div>
+          <div class="field">
+            <label>Patient Name</label>
+            <input class="control" type="text" placeholder="Enter full name" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Sex</label>
+            <div class="control select" data-select="sex">
+              <span class="value">Select</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              <div class="menu">
+                <div class="opt">Male</div>
+                <div class="opt">Female</div>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Patient Age</label>
+            <input class="control" type="text" inputmode="numeric" placeholder="e.g 34" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>State</label>
+            <div class="control select" data-select="state">
+              <span class="value">Select</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              <div class="menu">
+                <div class="opt">Lagos</div><div class="opt">Kano</div><div class="opt">Abuja (FCT)</div>
+                <div class="opt">Rivers</div><div class="opt">Oyo</div><div class="opt">Enugu</div><div class="opt">Imo</div>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Local Government (LGA)</label>
+            <div class="control select" data-select="lga">
+              <span class="value">Select</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              <div class="menu">
+                <div class="opt">Ikeja</div><div class="opt">Surulere</div><div class="opt">Eti-Osa</div><div class="opt">Alimosho</div><div class="opt">Mushin</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Extract Blood Sample -->
+  <div class="section">
+    <div class="section-head">
+      <div class="titles">
+        <h2>Extract Blood Sample</h2>
+        <span class="sub">Upload the patient's blood sample file or haematology report.</span>
+      </div>
+      <button class="btn-outline-danger" id="extractBtn">Extract Blood</button>
+    </div>
+    <div class="panel" style="gap:0">
+      <div class="uploader" id="uploader">
+        <span class="drop">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>
+        </span>
+        <span id="uploaderText">No Blood Extraction Yet</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Symptom Selection -->
+  <div class="section">
+    <div class="section-head">
+      <div class="titles">
+        <h2>Symptom Selection</h2>
+        <span class="sub">Select all symptoms the patient is presenting.</span>
+      </div>
+      <span class="count-badge" id="countBadge">0</span>
+    </div>
+    <div class="panel">
+      <div class="chips" id="chips">
+        <!-- chips injected by JS -->
+      </div>
+
+      <div class="add-group">
+        <div class="lbl">Add Symptoms <span class="hint">(If it is not listed above)</span></div>
+        <div class="add-row">
+          <input class="control" id="addInput" type="text" placeholder="Type in symptom" />
+          <button class="add-btn" id="addBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add
+          </button>
+        </div>
+      </div>
+
+      <div class="info-group">
+        <label>Any Additional Information?</label>
+        <textarea class="control" placeholder="Type here"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Run -->
+  <button class="run-btn" id="runBtn">
+    <span class="spinner"></span>
+    <span id="runText">Run AI Analysis</span>
+  </button>
+</div>
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toastMsg"></span></div>
+
+<script>
+(() => {
+  const DEFAULT_SYMPTOMS = [
+    "Chest Pain", "Shortness of Breath", "Dizziness", "Headache", "Loss of Appetite",
+    "Throat Irritation", "Rapid Heartbeat", "Blurred Vision", "Muscle Weakness",
+    "Nausea", "Fatigue", "Fever", "Persistent Cough", "Chills"
+  ];
+
+  const chips = document.getElementById('chips');
+  const countBadge = document.getElementById('countBadge');
+  const selected = new Set();
+
+  const checkSVG = '<span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>';
+  const removeSVG = '<span class="remove"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span>';
+
+  function updateCount() {
+    const n = selected.size;
+    countBadge.textContent = n;
+    countBadge.classList.toggle('show', n > 0);
+  }
+
+  function makeChip(name, { custom = false, entering = false } = {}) {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (custom ? ' custom' : '') + (entering ? ' entering' : '');
+    chip.dataset.name = name;
+    chip.innerHTML = checkSVG + '<span class="txt">' + name + '</span>' + (custom ? removeSVG : '');
+
+    chip.addEventListener('click', (e) => {
+      // custom chip remove button
+      if (custom && e.target.closest('.remove')) {
+        selected.delete(name);
+        chip.style.transition = 'opacity .2s, transform .2s';
+        chip.style.opacity = '0';
+        chip.style.transform = 'scale(0.7)';
+        setTimeout(() => chip.remove(), 200);
+        updateCount();
+        return;
+      }
+      toggle(chip, name);
+    });
+    return chip;
+  }
+
+  function toggle(chip, name) {
+    if (selected.has(name)) { selected.delete(name); chip.classList.remove('selected'); }
+    else { selected.add(name); chip.classList.add('selected'); }
+    updateCount();
+  }
+
+  // seed default chips
+  DEFAULT_SYMPTOMS.forEach(s => chips.appendChild(makeChip(s)));
+
+  // add custom symptom
+  const addInput = document.getElementById('addInput');
+  const addBtn = document.getElementById('addBtn');
+  function addCustom() {
+    const raw = addInput.value.trim();
+    if (!raw) { addInput.focus(); return; }
+    const name = raw.replace(/\s+/g, ' ');
+    // if it already exists, just select & flash it
+    const existing = [...chips.children].find(c => c.dataset.name.toLowerCase() === name.toLowerCase());
+    if (existing) {
+      if (!selected.has(existing.dataset.name)) toggle(existing, existing.dataset.name);
+      existing.classList.remove('entering'); void existing.offsetWidth; existing.classList.add('entering');
+      addInput.value = '';
+      return;
+    }
+    const chip = makeChip(name, { custom: true, entering: true });
+    chips.appendChild(chip);
+    selected.add(name);
+    chip.classList.add('selected');
+    updateCount();
+    addInput.value = '';
+    addInput.focus();
+  }
+  addBtn.addEventListener('click', addCustom);
+  addInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } });
+
+  // ── Custom selects ──
+  document.querySelectorAll('.select').forEach(sel => {
+    const valueEl = sel.querySelector('.value');
+    sel.addEventListener('click', e => {
+      if (e.target.closest('.opt')) {
+        const opt = e.target.closest('.opt');
+        sel.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
+        opt.classList.add('sel');
+        valueEl.textContent = opt.textContent;
+        valueEl.classList.add('filled');
+        sel.classList.remove('open');
+        return;
+      }
+      const wasOpen = sel.classList.contains('open');
+      document.querySelectorAll('.select.open').forEach(s => s.classList.remove('open'));
+      sel.classList.toggle('open', !wasOpen);
+    });
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.select')) document.querySelectorAll('.select.open').forEach(s => s.classList.remove('open'));
+  });
+
+  // ── Extract blood ──
+  const extractBtn = document.getElementById('extractBtn');
+  const uploader = document.getElementById('uploader');
+  const uploaderText = document.getElementById('uploaderText');
+  extractBtn.addEventListener('click', () => {
+    if (uploader.classList.contains('done')) return;
+    extractBtn.textContent = 'Extracting…';
+    setTimeout(() => {
+      uploader.classList.add('done');
+      uploaderText.textContent = 'haematology_report_MED-0049.pdf · extracted';
+      extractBtn.textContent = 'Re-extract';
+    }, 900);
+  });
+
+  // ── Toast ──
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toastMsg');
+  let toastTimer;
+  function showToast(html) {
+    toastMsg.innerHTML = html;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3600);
+  }
+
+  // ── Run analysis ──
+  const runBtn = document.getElementById('runBtn');
+  const runText = document.getElementById('runText');
+  runBtn.addEventListener('click', () => {
+    if (selected.size === 0) {
+      showToast('Select at least one symptom to run the analysis.');
+      return;
+    }
+    runBtn.classList.add('loading');
+    runText.textContent = 'Analyzing symptoms…';
+    setTimeout(() => {
+      runBtn.classList.remove('loading');
+      runText.textContent = 'Run AI Analysis';
+      const list = [...selected];
+      const preview = list.slice(0, 3).join(', ') + (list.length > 3 ? ` +${list.length - 3} more` : '');
+      showToast(`Analysis queued · <b>${list.length}</b> symptom${list.length > 1 ? 's' : ''}: ${preview}`);
+    }, 1400);
+  });
+
+  updateCount();
+})();
+</script>
+</body>
+</html>

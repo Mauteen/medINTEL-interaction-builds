@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MedINTEL — Case Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#be6d32;
+    --ink:#1f1f1f; --secondary:#6b6761; --muted:#b7b1a8;
+    --bd-soft:rgba(239,234,227,0.5); --bd-soft3:rgba(239,234,227,0.3); --bd-soft2:rgba(239,234,227,0.2);
+    --bd-card:rgba(231,225,216,0.4); --bd-card3:rgba(231,225,216,0.3);
+    --bd-input:#e7e1d8;
+    --cream:#fbfaf6;
+    --ease:cubic-bezier(.22,1,.36,1); --pop:cubic-bezier(.34,1.56,.64,1);
+    --sf:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Inter",sans-serif;
+    --inter:"Inter",-apple-system,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--inter);background:#fff;color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  button{font-family:inherit;cursor:pointer}
+  .run:active,.btn-confirm:active,.btn-cancel:active,.addbtn:active,.btn-blood:active,.qa-row:active,.ai-btn:active,.tab:active,.viewall:active,.minbtn:active{transform:scale(.98)}
+  .screen{min-height:100vh;display:none}
+  .screen.active{display:block;animation:screenIn .5s var(--ease)}
+  @keyframes screenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .shell{max-width:1440px;margin:0 auto}
+
+  /* ════════ Sidebar Container (top band) ════════ */
+  .topband{background:var(--cream);border-bottom:1px solid var(--bd-soft)}
+  .topband .inner{max-width:1440px;margin:0 auto;padding:16px 40px 0;display:flex;flex-direction:column;gap:32px}
+  .tb-header{display:flex;align-items:center;justify-content:space-between}
+  .logo{font-family:var(--sf);font-weight:600;font-size:24px;color:var(--ink)}
+  .logo span{color:var(--primary)}
+  .tb-right{display:flex;align-items:center;gap:14px}
+  .bell{width:32px;height:32px;padding:8px;border-radius:8px;background:#fff;border:1px solid var(--bd-soft);display:flex;align-items:center;justify-content:center;transition:box-shadow .2s var(--ease),border-color .2s var(--ease)}
+  .bell:hover{border-color:#e7e1d8;box-shadow:0 2px 8px rgba(31,29,26,.07)}
+  .bell:active{transform:scale(.96)}
+  .bell svg{width:20px;height:18px;flex-shrink:0}
+  .userblock{display:flex;align-items:center;gap:4px}
+  .avatar{width:32px;height:32px;border-radius:8px;background:var(--cream);border:1px solid var(--bd-soft3);display:flex;align-items:center;justify-content:center;font-family:var(--inter);font-weight:500;font-size:13px;line-height:20px;letter-spacing:-0.13px;color:var(--primary)}
+  .username{font-family:var(--inter);font-weight:500;font-size:14px;line-height:20px;letter-spacing:-0.14px;color:var(--ink)}
+  .menu{display:flex;gap:32px}
+  .menu-item{display:flex;align-items:center;gap:8px;padding:12px 0;background:none;border:none;font-family:var(--sf);font-weight:500;font-size:16px;color:var(--muted);transition:color .2s var(--ease)}
+  .menu-item svg{width:20px;height:20px}
+  .menu-item.active{color:var(--primary);border-bottom:1.5px solid var(--primary);margin-bottom:-1.5px}
+  .menu-item:not(.active):hover{color:var(--secondary)}
+
+  /* ════════ Dashboard content ════════ */
+  .content{max-width:1440px;margin:0 auto;padding:40px 40px 60px;display:flex;flex-direction:column;gap:32px}
+  .greet{display:flex;flex-direction:column;gap:6px}
+  .greet .line{font-family:var(--sf);font-weight:500;font-size:18px;color:var(--ink)}
+  .greet .line .gm{color:var(--secondary)}
+  .greet .date{font-family:var(--inter);font-size:13px;color:var(--muted)}
+  .cols{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
+  .col-main{width:982px;flex-shrink:0;display:flex;flex-direction:column;gap:24px}
+  .col-side{width:354px;flex-shrink:0;display:flex;flex-direction:column;gap:24px}
+  @media(max-width:1399px){.cols{flex-wrap:wrap}.col-main{width:100%}.col-side{width:100%}}
+
+  .crate{background:var(--cream);border:1px solid var(--bd-soft);border-radius:12px;padding:12px;overflow:hidden}
+
+  /* stats */
+  .stats-wrap{height:117px;display:flex;flex-direction:column;justify-content:center}
+  .stats{display:flex;gap:16px;align-items:center;width:100%}
+  .stat{flex:1;min-width:0;height:93px;background:#fefefe;border:1px solid var(--bd-card);border-radius:12px;padding:12px 24px;display:flex;align-items:center}
+  .stat .grp{display:flex;flex-direction:column;gap:6px;width:100%}
+  .stat .cap{display:flex;align-items:center;gap:4px}
+  .stat .cap svg{width:18px;height:18px;flex-shrink:0}
+  .stat .cap span{font-family:var(--inter);font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stat .num{font-family:var(--sf);font-weight:500;font-size:22px;color:var(--ink)}
+
+  /* active diagnoses */
+  .adx-wrap{height:152px;display:flex;flex-direction:column;gap:16px}
+  .crate-head{display:flex;align-items:center;gap:16px;width:100%}
+  .crate-title{flex:1;min-width:0;font-family:var(--sf);font-weight:500;font-size:16px;color:var(--secondary)}
+  .viewall{display:flex;align-items:center;gap:2px;background:none;border:none;border-radius:8px;padding:2px 4px;margin:-2px -4px;transition:background .2s var(--ease)}
+  .viewall:hover{background:rgba(190,109,50,.08)}
+  .viewall:hover svg{transform:translateX(2px)}
+  .viewall span{font-family:var(--inter);font-size:13px;line-height:18px;color:var(--primary)}
+  .viewall svg{width:18px;height:18px;transition:transform .25s var(--ease)}
+  .adx-card{background:#fefefe;border:1px solid var(--bd-card);border-radius:12px;padding:12px 24px;display:flex;gap:12px;align-items:center;width:100%}
+  .adx{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;text-align:center}
+  .adx .n{font-family:var(--sf);font-weight:500;font-size:22px;color:var(--ink)}
+  .adx .l{font-family:var(--inter);font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .adx-div{width:1px;height:69px;background:rgba(231,225,216,0.8);flex-shrink:0}
+
+  /* recent cases table */
+  .rc-wrap{height:541px;display:flex;flex-direction:column;gap:16px}
+  .rc-content{background:#fff;border:1px solid var(--bd-card);border-radius:12px;padding:16px;width:100%}
+  .rc-table{background:#fff;border:1px solid var(--bd-card);border-radius:12px;overflow:hidden;display:flex;width:100%}
+  .rc-col{flex:1;min-width:0;display:flex;flex-direction:column}
+  .rc-th{background:var(--cream);border-bottom:1px solid var(--bd-soft);height:44px;padding:12px 16px;display:flex;align-items:center;font-family:var(--inter);font-size:14px;line-height:20px;color:var(--secondary);white-space:nowrap}
+  .rc-td{background:#fff;border-bottom:1px solid var(--bd-soft);height:58px;padding:12px 16px;display:flex;align-items:center;font-family:var(--inter);font-size:14px;line-height:20px;color:var(--ink);transition:background .15s var(--ease)}
+  .rc-td.row-hover{background:#fcfbf7}
+  .rc-col .rc-td:last-child{border-bottom:none}
+  .badge{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:2px 8px;border-radius:20px;font-family:var(--inter);font-size:12px;line-height:18px;white-space:nowrap}
+  .badge.known{background:#f0fdf4;border:1px solid rgba(34,197,94,0.1);color:#15803d}
+  .badge.unknown{background:#fffbeb;border:1px solid rgba(245,158,11,0.1);color:#d97706}
+
+  /* quick actions */
+  .qa-wrap{display:flex;flex-direction:column;gap:8px}
+  .qa-label{font-family:var(--inter);font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+  .qa-list{display:flex;flex-direction:column;gap:8px;width:100%}
+  .ai-btn{height:36px;width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.7);padding:6px 8px;display:flex;align-items:center;justify-content:center;gap:6px;background-image:linear-gradient(0deg,rgb(190,109,50) 0%,rgb(223,145,88) 73.558%,rgb(207,127,69) 94.231%,rgb(248,186,141) 100%);transition:filter .2s var(--ease)}
+  .ai-btn:hover{filter:brightness(1.04)}
+  .ai-btn svg{width:20px;height:20px;flex-shrink:0}
+  .ai-btn span{font-family:var(--inter);font-weight:500;font-size:13px;letter-spacing:-0.13px;color:#fff;white-space:nowrap}
+  .qa-row{height:36px;width:100%;background:#fff;border:1px solid var(--bd-card3);border-radius:8px;padding:8px 12px;display:flex;align-items:center;transition:background .15s var(--ease)}
+  .qa-row:hover{background:#fdfcfa}
+  .qa-row .lead{flex:1;min-width:0;display:flex;align-items:center;gap:6px}
+  .qa-row .lead svg{width:16px;height:16px;flex-shrink:0}
+  .qa-row .lead span{font-family:var(--inter);font-weight:500;font-size:13px;color:var(--primary);text-align:left;flex:1;min-width:0}
+  .qa-row > svg{width:18px;height:18px;flex-shrink:0}
+
+  /* trending */
+  .tr-wrap{height:232px;display:flex;flex-direction:column;gap:12px}
+  .side-head{display:flex;align-items:center;gap:16px;width:100%}
+  .side-head .lead{flex:1;min-width:0;display:flex;align-items:center;gap:6px}
+  .side-head .lead svg{width:16px;height:16px;flex-shrink:0}
+  .side-head .lead span{font-family:var(--inter);font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;text-align:left}
+  .tr-card{background:#fefefe;border:1px solid var(--bd-card);border-radius:12px;padding:12px 12px 12px 16px;display:flex;flex-direction:column;gap:12px;justify-content:center;width:100%}
+  .tr-title{font-family:var(--inter);font-weight:500;font-size:14px;color:var(--ink)}
+  .tr-bars{display:flex;gap:8px;align-items:flex-end;width:100%}
+  .tr-colm{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;align-items:center}
+  .tr-bar{width:100%;border-radius:12px 12px 0 0;padding:12px 12px 8px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;overflow:hidden}
+  .tr-bar.b1{height:102px;background:#fffbeb;border:1px solid rgba(245,158,11,0.1)}
+  .tr-bar.b1 p{font-family:var(--inter);font-weight:500;font-size:14px;color:#d97706;text-align:center;width:100%}
+  .tr-bar.b2{height:62px;background:#f0fdf4;border:1px solid rgba(34,197,94,0.1)}
+  .tr-bar.b2 p{font-family:var(--sf);font-weight:500;font-size:14px;color:#15803d;text-align:center;width:100%}
+  .tr-bar.b3{height:41px;background:#fef2f2;border:1px solid rgba(239,68,68,0.1);justify-content:center}
+  .tr-bar.b3 p{font-family:var(--sf);font-weight:500;font-size:14px;color:#dc2626;text-align:center;width:100%}
+  .tr-lbl{font-family:var(--inter);font-size:12px;color:var(--secondary);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+
+  /* recent activities */
+  .ra-wrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:16px}
+  .ra-card{background:#fefefe;border:1px solid var(--bd-card);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:12px;justify-content:center;width:100%}
+  .ra-cell{background:#fff;display:flex;flex-direction:column;gap:4px;width:100%}
+  .ra-cell.bb{border-bottom:1px solid var(--bd-soft2)}
+  .ra-row1{display:flex;gap:8px;align-items:flex-start;padding-bottom:12px}
+  .ra-row1 p{flex:1;min-width:0;font-family:var(--inter);font-size:13px;color:var(--ink)}
+  .badge73{width:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:4px;padding:2px 8px;border-radius:20px;background:#fffbeb;border:1px solid rgba(245,158,11,0.1);font-family:var(--inter);font-size:10px;color:#d97706;white-space:nowrap}
+  .ra-item{display:flex;flex-direction:column;gap:8px}
+  .ra-item .t{font-family:var(--inter);font-size:13px;color:var(--ink)}
+  .ra-item .d{font-family:var(--inter);font-size:12px;line-height:16px;color:var(--secondary)}
+  .ra-ago{font-family:var(--inter);font-size:10px;color:var(--muted)}
+  .ra-pad{padding-bottom:14px}
+
+  /* ════════ Overlay drawer ════════ */
+  .overlay{position:fixed;inset:0;background:rgba(31,29,26,.32);z-index:50;display:flex;justify-content:flex-end;opacity:0;visibility:hidden;transition:opacity .4s var(--ease),visibility .4s var(--ease)}
+  .overlay.show{opacity:1;visibility:visible}
+  .drawer{width:688px;max-width:96vw;height:100%;background:#fff;overflow-y:auto;transform:translateX(100%);transition:transform .5s var(--ease)}
+  .overlay.show .drawer{transform:translateX(0)}
+
+  /* new case form */
+  .nc{display:flex;flex-direction:column;align-items:center;gap:24px;padding:32px 0}
+  .nc-head{width:100%;padding:0 24px 20px;border-bottom:1px solid #efeae3;display:flex;flex-direction:column;gap:20px;justify-content:center}
+  .nc-head-row{display:flex;gap:16px;align-items:center}
+  .nc-head-row .tt{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+  .nc-head h2{font-family:var(--sf);font-weight:500;font-size:20px;color:var(--ink)}
+  .nc-head .sub{font-family:var(--inter);font-size:14px;color:var(--secondary)}
+  .x{background:var(--cream);border:1px solid var(--bd-soft3);border-radius:8px;padding:8px;display:flex;align-items:center;justify-content:center;transition:background .2s var(--ease),transform .2s var(--ease)}
+  .x svg{width:20px;height:20px}
+  .x:hover{background:#f1ece4;transform:rotate(90deg)}
+  .tabs{display:flex;gap:8px;height:48px;background:var(--cream);border:1px solid var(--bd-soft);border-radius:12px;padding:4px;width:100%}
+  .tab{flex:1;min-width:0;height:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 14px;border-radius:12px;border:none;background:transparent;font-family:var(--inter);font-size:14px;line-height:20px;color:var(--muted);white-space:nowrap;transition:all .3s var(--ease)}
+  .tab:not(.active):hover{color:var(--secondary)}
+  .tab.active{background:#fff;font-weight:500;color:var(--ink);box-shadow:0px 1px 2px 0px rgba(18,26,43,0.1),0px 1px 2px -1px rgba(18,26,43,0.06)}
+  .nc-body{width:100%;padding:0 24px;display:flex;flex-direction:column;gap:16px}
+  .tabview{display:flex;flex-direction:column;gap:24px;align-items:center;width:100%}
+  .tabview.anim{animation:tabIn .35s var(--ease)}
+  @keyframes tabIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  #tabExist .ctl{height:48px}
+  #tabExist .sect-in{gap:16px}
+
+  .sect{background:var(--cream);border:1px solid var(--bd-soft);border-radius:12px;padding:16px 12px 12px;display:flex;flex-direction:column;justify-content:center;width:100%}
+  .sect-in{display:flex;flex-direction:column;gap:16px;width:100%}
+  .sect-head{display:flex;gap:16px;align-items:center;width:100%}
+  .sect-head .tt{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;justify-content:center}
+  .sect-head h3{font-family:var(--sf);font-weight:500;font-size:18px;color:var(--ink)}
+  .sect-head .sub{font-family:var(--inter);font-size:13px;color:var(--secondary)}
+  .panel{background:#fff;border:1px solid var(--bd-card);border-radius:12px;padding:20px;display:flex;flex-direction:column;width:100%}
+  .rows{display:flex;flex-direction:column;gap:24px;width:100%}
+  .frow{display:flex;gap:24px;width:100%}
+  .field{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+  .field label{font-family:var(--sf);font-weight:500;font-size:14px;height:17px;color:var(--ink)}
+  .field label .hint{font-family:var(--sf);font-weight:400;font-size:12px;color:var(--muted)}
+  .ctl{height:44px;background:var(--cream);border:1px solid var(--bd-input);border-radius:8px;padding:16px;font-family:var(--inter);font-size:13px;line-height:18px;color:var(--ink);display:flex;align-items:center;gap:10px;width:100%;outline:none;transition:border-color .2s var(--ease),box-shadow .2s var(--ease)}
+  input.ctl,textarea.ctl{padding:0 16px}
+  textarea.ctl{padding:16px}
+  .ctl::placeholder{color:var(--muted)}
+  .ctl:not(.dis):not(:focus):not(.open):hover{border-color:#d9d1c4}
+  .ctl.dis{cursor:not-allowed}
+  .ctl:focus,.ctl.open{border-color:var(--primary);box-shadow:0 0 0 3px rgba(190,109,50,.1)}
+  .ctl.dis{background:#f2f1ee;color:var(--muted)}
+  .select{position:relative;cursor:pointer;user-select:none;padding:16px}
+  .select .val{flex:1;min-width:0;color:var(--muted)}
+  .select .val.filled{color:var(--ink)}
+  .select .chev{width:20px;height:20px;flex-shrink:0;color:var(--secondary);transition:transform .25s var(--ease)}
+  .select.open .chev{transform:rotate(180deg)}
+  .menu-dd{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;background:#fff;border:1px solid var(--bd-input);border-radius:10px;box-shadow:0 10px 30px rgba(31,29,26,.12);padding:6px;opacity:0;transform:translateY(-6px) scale(.98);pointer-events:none;transition:all .2s var(--ease);max-height:200px;overflow-y:auto}
+  .select.open .menu-dd{opacity:1;transform:none;pointer-events:auto}
+  .opt{padding:9px 12px;border-radius:7px;font-family:var(--inter);font-size:13px;color:var(--secondary);cursor:pointer;transition:background .15s,color .15s}
+  .opt:hover{background:var(--cream);color:var(--ink)}
+  .opt.sel{background:#f8efe7;color:var(--primary);font-weight:500}
+
+  .btn-blood{background:#fff;border:1px solid rgba(158,58,45,0.5);border-radius:8px;padding:6px 8px;display:flex;align-items:center;justify-content:center;font-family:var(--inter);font-weight:500;font-size:12px;line-height:18px;color:#9e3a2d;white-space:nowrap;transition:background .2s var(--ease)}
+  .btn-blood:hover{background:#fdf3f1}
+  .uploader{background:var(--cream);border:1px dashed var(--bd-input);border-radius:10px;padding:24px;min-height:52px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;transition:all .3s var(--ease)}
+  .uploader svg{width:18px;height:18px;flex-shrink:0}
+  .uploader span{font-family:var(--inter);font-size:14px;color:var(--muted);text-align:center}
+  .uploader:not(.done){cursor:pointer}
+  .uploader:not(.done):hover{border-color:rgba(158,58,45,.45);background:#faf6f0}
+  .uploader.done{border-style:solid;border-color:rgba(158,58,45,.4);background:#fdf6f4}
+  .uploader.done span{color:#9e3a2d}
+
+  .panel-gap24{gap:24px}
+  .chips-zone{display:flex;flex-direction:column;gap:24px;width:100%}
+  .chips{display:flex;flex-wrap:wrap;gap:12px}
+  .chip{height:32px;padding:8px 16px;border-radius:100px;background:var(--cream);border:1px solid var(--bd-input);display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--inter);font-size:13px;line-height:18px;color:var(--secondary);white-space:nowrap;transition:background .25s var(--ease),border-color .25s var(--ease),color .25s var(--ease),transform .15s var(--ease)}
+  .chip:hover{border-color:var(--primary);color:var(--primary)}
+  .chip:active{transform:scale(.95)}
+  .chip .ck{width:0;height:14px;overflow:hidden;opacity:0;display:inline-flex;align-items:center;transition:width .25s var(--ease),opacity .2s}
+  .chip.sel{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:500;animation:cpop .3s var(--pop)}
+  .chip.sel:hover{color:#fff}
+  .chip.sel .ck{width:16px;opacity:1}
+  .chip .rm{width:0;opacity:0;overflow:hidden;display:inline-flex;align-items:center;transition:width .25s var(--ease),opacity .2s,margin-left .25s}
+  .chip.custom.sel .rm{width:14px;opacity:.9;margin-left:2px}
+  @keyframes cpop{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+  @keyframes cin{from{opacity:0;transform:scale(.8) translateY(6px)}to{opacity:1;transform:none}}
+  .chip.entering{animation:cin .35s var(--pop)}
+  .addg{display:flex;flex-direction:column;gap:8px;width:100%}
+  .addg .lbl{font-family:var(--sf);font-weight:500;font-size:14px;height:17px;color:var(--ink)}
+  .addg .lbl .hint{font-family:var(--sf);font-weight:400;font-size:12px;color:var(--muted)}
+  .addrow{display:flex;gap:8px;width:100%}
+  .addrow input{flex:1;min-width:0;height:40px}
+  .addbtn{height:40px;padding:16px 12px;border-radius:8px;background:var(--cream);border:1px solid var(--primary);display:inline-flex;align-items:center;gap:4px;font-family:var(--inter);font-weight:500;font-size:14px;line-height:18px;color:var(--primary);transition:background .2s var(--ease)}
+  .addbtn svg{width:20px;height:20px}
+  .addbtn:hover{background:#f8efe7}
+  .infog{display:flex;flex-direction:column;gap:8px;height:120px;width:100%}
+  .infog label{font-family:var(--sf);font-weight:500;font-size:14px;color:var(--ink)}
+  .infog textarea{flex:1;min-height:0;resize:none;align-items:flex-start}
+  .run{height:48px;width:100%;border-radius:8px;background:var(--primary);border:1px solid rgba(74,124,89,0.3);padding:16px;display:flex;align-items:center;justify-content:center;font-family:var(--sf);font-weight:500;font-size:14px;line-height:18px;color:#fff;text-align:center;transition:filter .2s var(--ease)}
+  .run:hover{filter:brightness(1.06)}
+  .nc-foot{width:100%;padding:0 24px}
+
+  /* ════════ Loading view ════════ */
+  .loadwrap{min-height:100%;background:var(--cream);padding:32px 24px;display:flex;flex-direction:column;align-items:center}
+  .load-col{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;align-items:center;width:100%}
+  .load-frame{flex:1;min-height:0;width:100%;background:var(--cream);border:1px solid var(--bd-soft);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .load-card{flex:1;min-height:0;width:100%;background:#fff;border-radius:16px;padding:40px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .load-inner{display:flex;flex-direction:column;gap:24px;align-items:center;justify-content:center}
+  .load-top{display:flex;flex-direction:column;gap:16px;align-items:center}
+  .load-top img{width:64px;height:64px;animation:breathe 1.8s var(--ease) infinite}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .load-txt{display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;text-align:center}
+  .load-txt .t{font-family:var(--inter);font-weight:500;font-size:16px;color:var(--secondary);white-space:nowrap}
+  .load-txt .s{font-family:var(--inter);font-size:12px;color:var(--muted);width:100%}
+  .steps{display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center}
+  .step{width:100%;background:rgba(251,250,246,0.8);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px}
+  .step .dot{width:6px;height:6px;border-radius:50%;background:rgba(183,177,168,0.7);flex-shrink:0;transition:background .4s var(--ease)}
+  .step p{font-family:var(--inter);font-size:14px;color:rgba(183,177,168,0.7);white-space:nowrap;transition:color .4s var(--ease)}
+  .step.active .dot,.step.done .dot{background:var(--primary)}
+  .step.active p{color:var(--primary)}
+  .step.done p{color:var(--secondary)}
+  .minbtn{display:flex;align-items:center;justify-content:center;gap:8px;background:none;border:none;border-radius:8px;padding:6px 10px;margin:-6px -10px;transition:background .2s var(--ease)}
+  .minbtn:hover{background:rgba(231,225,216,.35)}
+  .minbtn:hover span{color:var(--ink)}
+  .minbtn img{width:16px;height:16px}
+  .minbtn span{font-family:var(--inter);font-weight:500;font-size:14px;color:var(--secondary);white-space:nowrap;transition:color .2s var(--ease)}
+
+  /* ════════ Report ════════ */
+  .rep-content{max-width:1440px;margin:0 auto;padding:40px 40px 60px;display:flex;flex-direction:column;gap:24px}
+  .rep-head{background:var(--cream);border:1px solid var(--bd-soft);border-radius:12px;padding:14px 12px;display:flex;align-items:center;gap:10px;overflow:hidden}
+  .rep-head .tt{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+  .rep-head h1{font-family:var(--sf);font-weight:400;font-size:18px;color:var(--ink)}
+  .rep-gen{display:flex;align-items:center;gap:6px;width:100%}
+  .rep-gen svg{width:16px;height:16px;flex-shrink:0}
+  .rep-gen span{flex:1;min-width:0;font-family:var(--inter);font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rep-btns{display:flex;align-items:center;gap:16px;flex-shrink:0}
+  .btn-cancel{height:38px;background:#fff;border:1px solid rgba(158,58,45,0.5);border-radius:8px;padding:16px 12px;display:flex;align-items:center;gap:4px;font-family:var(--inter);font-weight:500;font-size:13px;line-height:18px;color:#9e3a2d;white-space:nowrap;transition:background .2s var(--ease)}
+  .btn-cancel:hover{background:#fdf3f1}
+  .btn-cancel svg{width:18px;height:18px}
+  .btn-confirm{height:38px;background:var(--primary);border:1px solid var(--primary);border-radius:8px;padding:16px 12px;display:flex;align-items:center;gap:6px;font-family:var(--inter);font-weight:500;font-size:13px;line-height:18px;color:#fff;white-space:nowrap;transition:filter .2s var(--ease)}
+  .btn-confirm:hover{filter:brightness(1.06)}
+  .btn-confirm svg{width:18px;height:18px}
+
+  .rep-cols{display:flex;gap:24px;align-items:flex-start;width:100%}
+  .rep-main{width:856px;flex-shrink:0;background:var(--cream);border:1px solid var(--bd-soft);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:16px;overflow:hidden}
+  @media(max-width:1399px){.rep-cols{flex-wrap:wrap}.rep-main{width:100%}}
+  .rep-side{flex:1;min-width:280px;display:flex;flex-direction:column;gap:16px;justify-content:center}
+
+  .ov-card{background:#fff;border:1px solid var(--bd-card);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:16px;width:100%}
+  .ov-head{display:flex;flex-direction:column;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--bd-soft);width:100%}
+  .ov-label{font-family:var(--inter);font-size:11px;color:var(--secondary);text-transform:uppercase}
+  .ov-title{font-family:var(--inter);font-weight:500;font-size:18px;color:var(--ink);white-space:nowrap}
+  .ov-desc{font-family:var(--inter);font-size:14px;line-height:22px;color:var(--secondary);width:100%}
+  .ov-details{background:var(--cream);border:1px solid var(--bd-soft);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;width:100%;overflow:hidden}
+  .ov-row{display:flex;gap:8px;align-items:flex-start;width:100%}
+  .ov-cell{flex:1;min-width:0;height:79px;background:#fff;border:1px solid var(--bd-card3);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;justify-content:center}
+  .ov-cell.auto{height:auto}
+  .ov-cell .k{font-family:var(--inter);font-size:11px;color:var(--secondary);text-transform:uppercase}
+  .ov-cell .k.mut{color:var(--muted)}
+  .ov-cell .v{font-family:var(--inter);font-size:14px;color:var(--ink);white-space:nowrap}
+  .ov-cell .v13{font-family:var(--inter);font-size:13px;line-height:18px;color:var(--secondary);width:100%}
+  .risk-pill{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:2px 8px;border-radius:20px;background:#fffbeb;border:1px solid rgba(245,158,11,0.1);font-family:var(--inter);font-size:12px;line-height:18px;color:#d97706;white-space:nowrap;align-self:flex-start}
+
+  .txt-card{background:#fff;border:1px solid var(--bd-card);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;width:100%}
+  .txt-card h3{font-family:var(--sf);font-weight:500;font-size:16px;color:var(--ink)}
+  .txt-card p{font-family:var(--inter);font-size:14px;line-height:22px;color:var(--secondary)}
+  .rep-main-stack{display:flex;flex-direction:column;gap:16px;width:100%}
+
+  .sb-card{background:var(--cream);border:1px solid var(--bd-soft);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:16px;width:100%;overflow:hidden}
+  .sb-label{font-family:var(--inter);font-size:11px;color:var(--secondary);text-transform:uppercase;width:100%}
+  .sb-details{background:#fff;border:1px solid var(--bd-card);border-radius:12px;display:flex;flex-direction:column;width:100%}
+  .det{display:flex;align-items:center;gap:8px;padding:12px;border-bottom:1px solid var(--bd-soft2);width:100%}
+  .sb-details .det:last-child{border-bottom:none}
+  .det .k{flex:1;min-width:0;font-family:var(--inter);font-size:12px;color:var(--muted)}
+  .det .v{font-family:var(--inter);font-size:14px;color:var(--ink);white-space:nowrap;text-align:right}
+  .sb-file{height:48px;background:#fff;border:1px dashed var(--bd-input);border-radius:10px;padding:14px 16px;display:flex;align-items:center;width:100%;cursor:pointer;transition:border-color .2s,background .2s}
+  .sb-file:hover{border-color:var(--primary);background:#fdf8f3}
+  .sb-file .in{flex:1;min-width:0;display:flex;align-items:center;gap:6px}
+  .sb-file svg{width:16px;height:16px;flex-shrink:0}
+  .sb-file span{font-family:var(--inter);font-size:14px;color:var(--secondary);text-transform:capitalize;white-space:nowrap}
+  .sym-card{background:#fff;border:1px solid var(--bd-card);border-radius:12px;display:flex;flex-direction:column;width:100%}
+  .sym-cell{padding:12px;display:flex;width:100%}
+  .sym-rows{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+  .sym-set{display:flex;gap:8px;flex-wrap:wrap}
+  .sym-chip{background:var(--cream);border-radius:100px;padding:8px 12px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--inter);font-size:11px;color:var(--secondary);white-space:nowrap}
+  .notes-box{height:89px;background:#fff;border:1px solid var(--bd-input);border-radius:8px;padding:16px;width:100%;resize:none;outline:none;font-family:var(--inter);font-size:13px;line-height:18px;color:var(--ink)}
+  .notes-box::placeholder{color:var(--muted)}
+  .notes-box:not(:focus):hover{border-color:#d9d1c4}
+  .notes-box:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(190,109,50,.1)}
+</style>
+</head>
+<body>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<section class="screen active" id="screen-dash">
+  <div class="topband"><div class="inner">
+    <div class="tb-header">
+      <div class="logo">Med<span>INTEL</span></div>
+      <div class="tb-right">
+        <button class="bell" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="#1f1f1f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
+        <div class="userblock"><div class="avatar">MA</div><span class="username">Dr Mauteen.A</span></div>
+      </div>
+    </div>
+    <div class="menu">
+      <button class="menu-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>Dashboard</button>
+      <button class="menu-item" data-nav="report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-3.8-3.8"/><circle cx="11" cy="11" r="2.5"/></svg>Diagnoses</button>
+      <button class="menu-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.5-.76L3 21l1.76-6A8.5 8.5 0 1 1 21 11.5z"/></svg>Messages</button>
+      <button class="menu-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="9.5" r="3"/><path d="M5.8 19a7.5 7.5 0 0 1 12.4 0"/></svg>Account</button>
+      <button class="menu-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</button>
+    </div>
+  </div></div>
+
+  <div class="content">
+    <div class="greet">
+      <div class="line"><span class="gm">Good morning, </span>Dr. Mauteen</div>
+      <div class="date">Tuesday, 19 May 2026</div>
+    </div>
+
+    <div class="cols">
+      <div class="col-main">
+        <!-- stats -->
+        <div class="crate stats-wrap">
+          <div class="stats">
+            <div class="stat"><div class="grp"><div class="cap"><svg viewBox="0 0 24 24" fill="none" stroke="#b7b1a8" stroke-width="1.7" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20v-.8a6.5 6.5 0 0 1 13 0v.8"/><circle cx="17" cy="9" r="2.5"/><path d="M21.5 20v-.6a5 5 0 0 0-4-4.9"/></svg><span>All Total Cases</span></div><div class="num">10,000</div></div></div>
+            <div class="stat"><div class="grp"><div class="cap"><svg viewBox="0 0 24 24" fill="none" stroke="#b7b1a8" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-3.8-3.8"/><circle cx="11" cy="11" r="2.5"/></svg><span>Diagnoses</span></div><div class="num">500</div></div></div>
+            <div class="stat"><div class="grp"><div class="cap"><svg viewBox="0 0 24 24" fill="none" stroke="#b7b1a8" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.7c0 1.7-2.5 2.5-2.5 2.5"/><path d="M12 16.5h.01"/></svg><span>Unknown Cases</span></div><div class="num">30</div></div></div>
+          </div>
+        </div>
+
+        <!-- active diagnoses -->
+        <div class="crate adx-wrap">
+          <div class="crate-head">
+            <div class="crate-title">Active Diagnoses</div>
+            <button class="viewall"><span>View all</span><svg viewBox="0 0 24 24" fill="none" stroke="#6b6761" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+          </div>
+          <div class="adx-card">
+            <div class="adx"><div class="n">95</div><div class="l">Dengue Fever</div></div>
+            <div class="adx-div"></div>
+            <div class="adx"><div class="n">120</div><div class="l">HIV/AIDS</div></div>
+            <div class="adx-div"></div>
+            <div class="adx"><div class="n">45</div><div class="l">Cholera</div></div>
+            <div class="adx-div"></div>
+            <div class="adx"><div class="n">65</div><div class="l">Tuberculosis</div></div>
+          </div>
+        </div>
+
+        <!-- recent cases -->
+        <div class="crate rc-wrap">
+          <div class="crate-head"><div class="crate-title">Recent Cases Added</div></div>
+          <div class="rc-content">
+            <div class="rc-table">
+              <div class="rc-col">
+                <div class="rc-th">Case ID</div>
+                <div class="rc-td">MED-0080</div><div class="rc-td">MED-0024</div><div class="rc-td">MED-0003</div><div class="rc-td">MED-0040</div><div class="rc-td">MED-0066</div><div class="rc-td">MED-0039</div><div class="rc-td">MED-0123</div>
+              </div>
+              <div class="rc-col">
+                <div class="rc-th">Diagnosis</div>
+                <div class="rc-td">Lassa Fever</div><div class="rc-td">Unknown</div><div class="rc-td">Typhoid Fever</div><div class="rc-td">Hepatitis B</div><div class="rc-td">Diabetes Mellitus</div><div class="rc-td">Kidney Disease</div><div class="rc-td">Unknown</div>
+              </div>
+              <div class="rc-col">
+                <div class="rc-th">Status</div>
+                <div class="rc-td"><span class="badge known">Known</span></div><div class="rc-td"><span class="badge unknown">Unknown</span></div><div class="rc-td"><span class="badge known">Known</span></div><div class="rc-td"><span class="badge known">Known</span></div><div class="rc-td"><span class="badge known">Known</span></div><div class="rc-td"><span class="badge known">Known</span></div><div class="rc-td"><span class="badge unknown">Unknown</span></div>
+              </div>
+              <div class="rc-col">
+                <div class="rc-th">State</div>
+                <div class="rc-td">Ondo</div><div class="rc-td">Lagos</div><div class="rc-td">Imo</div><div class="rc-td">Abuja</div><div class="rc-td">Lagos</div><div class="rc-td">Lagos</div><div class="rc-td">Delta</div>
+              </div>
+              <div class="rc-col">
+                <div class="rc-th">Date</div>
+                <div class="rc-td">19 May 2026</div><div class="rc-td">19 May 2026</div><div class="rc-td">18 May 2026</div><div class="rc-td">18 May 2026</div><div class="rc-td">16 May 2026</div><div class="rc-td">11 May 2026</div><div class="rc-td">05 May 2026</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-side">
+        <!-- quick actions -->
+        <div class="crate qa-wrap">
+          <div class="qa-label">Quick actions</div>
+          <div class="qa-list">
+            <button class="ai-btn" id="aiBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 6.5l4 4M3 21l1.1-3.9a2 2 0 0 1 .51-.88L15.4 5.43a1.8 1.8 0 0 1 2.55 0l.62.62a1.8 1.8 0 0 1 0 2.55L7.78 19.4a2 2 0 0 1-.88.5L3 21z"/><path d="M19.7 2.8l.45 1.15 1.15.45-1.15.45-.45 1.15-.45-1.15-1.15-.45 1.15-.45z" fill="#fff" stroke="none"/></svg>
+              <span>MedIntel AI</span>
+            </button>
+            <button class="qa-row" id="loginCaseBtn">
+              <span class="lead"><svg viewBox="0 0 24 24" fill="none" stroke="#be6d32" stroke-width="1.7" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20v-.8a6.5 6.5 0 0 1 13 0v.8"/><circle cx="17" cy="9" r="2.5"/><path d="M21.5 20v-.6a5 5 0 0 0-4-4.9"/></svg><span>Log in new case</span></span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#6b6761" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <button class="qa-row">
+              <span class="lead"><svg viewBox="0 0 24 24" fill="none" stroke="#be6d32" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.5-.76L3 21l1.76-6A8.5 8.5 0 1 1 21 11.5z"/></svg><span>Send a message</span></span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#6b6761" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- trending -->
+        <div class="crate tr-wrap">
+          <div class="side-head">
+            <span class="lead"><svg viewBox="0 0 24 24" fill="none" stroke="#b7b1a8" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><span>Trending Diagnosis</span></span>
+            <button class="viewall"><span>View all</span><svg viewBox="0 0 24 24" fill="none" stroke="#6b6761" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+          </div>
+          <div class="tr-card">
+            <div class="tr-title">Hepatitis B</div>
+            <div class="tr-bars">
+              <div class="tr-colm"><div class="tr-bar b1"><p>10,000</p></div><div class="tr-lbl">Active Cases</div></div>
+              <div class="tr-colm"><div class="tr-bar b2"><p>2,300</p></div><div class="tr-lbl">Cleared Cases</div></div>
+              <div class="tr-colm"><div class="tr-bar b3"><p>10</p></div><div class="tr-lbl">Death Cases</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- recent activities -->
+        <div class="crate ra-wrap">
+          <div class="side-head">
+            <span class="lead"><svg viewBox="0 0 24 24" fill="none" stroke="#b7b1a8" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v5M12 8h.01"/></svg><span>Recent activities</span></span>
+            <button class="viewall"><span>View all</span><svg viewBox="0 0 24 24" fill="none" stroke="#6b6761" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+          </div>
+          <div class="ra-card">
+            <div class="ra-cell bb"><div class="ra-row1"><p>Analysis in progress - Case #MED-006</p><span class="badge73">73%</span></div></div>
+            <div class="ra-cell bb ra-pad"><div class="ra-item"><div class="t">Diagnosis update - Typhoid Fever</div><div class="d">2 new cases added to group. Lagos now highest state.</div></div><div class="ra-ago">33 mins ago</div></div>
+            <div class="ra-cell bb ra-pad"><div class="ra-item"><div class="t">Diagnosis update - Typhoid Fever</div><div class="d">2 new cases added to group. Lagos now highest state.</div></div><div class="ra-ago">4 hr ago</div></div>
+            <div class="ra-cell"><div class="ra-item"><div class="t">Unknown Diagnosis - Case #MED-0047</div><div class="d">AI analysis results shows case unknown</div></div><div class="ra-ago">2 days ago</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ REPORT ══════════ -->
+<section class="screen" id="screen-report">
+  <div class="topband"><div class="inner">
+    <div class="tb-header">
+      <div class="logo">Med<span>INTEL</span></div>
+      <div class="tb-right">
+        <button class="bell" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="#1f1f1f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
+        <div class="userblock"><div class="avatar">MA</div><span class="username">Dr Mauteen.A</span></div>
+      </div>
+    </div>
+    <div class="menu">
+      <button class="menu-item" data-nav="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>Dashboard</button>
+      <button class="menu-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-3.8-3.8"/><circle cx="11" cy="11" r="2.5"/></svg>Diagnoses</button>
+      <button class="menu-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.5-.76L3 21l1.76-6A8.5 8.5 0 1 1 21 11.5z"/></svg>Messages</button>
+      <button class="menu-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="9.5" r="3"/><path d="M5.8 19a7.5 7.5 0 0 1 12.4 0"/></svg>Account</button>
+      <button class="menu-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</button>
+    </div>
+  </div></div>
+
+  <div class="rep-content">
+    <div class="rep-head">
+      <div class="tt">
+        <h1>Analysis Report — #MED-0049</h1>
+        <div class="rep-gen"><svg viewBox="0 0 24 24" fill="none" stroke="#b7b1a8" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Generated 19 May 2026, 09:41</span></div>
+      </div>
+      <div class="rep-btns">
+        <button class="btn-cancel" id="cancelCase">Cancel case analysis <svg viewBox="0 0 24 24" fill="none" stroke="#9e3a2d" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        <button class="btn-confirm" id="confirmCase">Confirm &amp; Dispatch Case <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg></button>
+      </div>
+    </div>
+
+    <div class="rep-cols">
+      <div class="rep-main">
+        <div class="ov-card">
+          <div class="ov-head">
+            <div class="ov-label">AI Classification</div>
+            <div class="ov-title">Hepatitis B</div>
+          </div>
+          <p class="ov-desc">Hepatitis B is a viral liver infection caused by Hepatitis B virus (HBV). Nigeria has one of the highest HBV burdens globally. Cases in this group were identified through blood sample analysis during admission workups.</p>
+          <div class="ov-details">
+            <div class="ov-row">
+              <div class="ov-cell"><div class="k">Causative Agent</div><div class="v">Hepatitis B virus (HBV)</div></div>
+              <div class="ov-cell auto"><div class="k mut">Transmission</div><div class="v13">Unprotected sex, contaminated blood/needles, mother-to-child at birth.</div></div>
+            </div>
+            <div class="ov-row">
+              <div class="ov-cell"><div class="k">Incubation Period</div><div class="v">45–180 day</div></div>
+              <div class="ov-cell"><div class="k">Risk Level</div><span class="risk-pill">Medium Risk</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rep-main-stack">
+          <div class="txt-card"><h3>Prevention Measures</h3><p>Hepatitis B vaccine (highly effective, 3-dose schedule), safe sex, needle exchange programmes, universal birth-dose vaccination.</p></div>
+          <div class="txt-card"><h3>Standard Treatment Protocol</h3><p>Antiviral therapy (Tenofovir, Entecavir) for chronic cases. Acute cases: supportive care. Monitoring of liver function.</p></div>
+          <div class="txt-card"><h3>Recommended Actions</h3><p>Antiviral therapy (Tenofovir, Entecavir) for chronic cases. Acute cases: supportive care. Monitoring of liver function.</p></div>
+        </div>
+      </div>
+
+      <div class="rep-side">
+        <div class="sb-card">
+          <div class="sb-label">Patient details</div>
+          <div class="sb-details">
+            <div class="det"><span class="k">Case ID</span><span class="v" id="r-caseid">MED-0049</span></div>
+            <div class="det"><span class="k">Patient Name</span><span class="v" id="r-name">Mauteen Adeleke</span></div>
+            <div class="det"><span class="k">Age/sex</span><span class="v" id="r-agesex">22 yrs · Male</span></div>
+            <div class="det"><span class="k">State</span><span class="v" id="r-state">Lagos Island LGA</span></div>
+            <div class="det"><span class="k">Blood Group</span><span class="v">AA</span></div>
+            <div class="det"><span class="k">Analysed by</span><span class="v">Dr Mauteen</span></div>
+          </div>
+        </div>
+
+        <div class="sb-card">
+          <div class="sb-label">Blood Sample</div>
+          <div class="sb-file"><span class="in"><svg viewBox="0 0 24 24" fill="none" stroke="#6b6761" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg><span>Blood sample file</span></span></div>
+        </div>
+
+        <div class="sb-card">
+          <div class="sb-label">SymptomS</div>
+          <div class="sym-card"><div class="sym-cell">
+            <div class="sym-rows" id="r-symptoms">
+              <div class="sym-set"><span class="sym-chip">Chest Pain</span><span class="sym-chip">Shortness of Breath</span><span class="sym-chip">Dizziness</span></div>
+              <div class="sym-set"><span class="sym-chip">Chest Pain</span><span class="sym-chip">Shortness of Breath</span><span class="sym-chip">Dizziness</span><span class="sym-chip">Dizziness</span></div>
+              <div class="sym-set"><span class="sym-chip">Chest Pain</span><span class="sym-chip">Shortness of Breath</span><span class="sym-chip">Dizziness</span><span class="sym-chip">Dizziness</span></div>
+            </div>
+          </div></div>
+        </div>
+
+        <div class="sb-card">
+          <div class="sb-label">SCIENTIST NOTES</div>
+          <textarea class="notes-box" placeholder="Write your notes here..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ OVERLAY (new case / loading) ══════════ -->
+<div class="overlay" id="overlay">
+  <div class="drawer" id="drawer">
+
+    <!-- new case form -->
+    <div class="nc" id="formView">
+      <div class="nc-head">
+        <div class="nc-head-row">
+          <div class="tt"><h2>New Case</h2><span class="sub">Enter the details below to add a case.</span></div>
+          <button class="x" id="closeDrawer" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="#6b6761" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="tabs"><button class="tab active" id="tabBtnNew">Add New Case</button><button class="tab" id="tabBtnExist">Add to existing diagnosis</button></div>
+      </div>
+
+      <div class="tabview" id="tabNew">
+      <div class="nc-body">
+        <div class="sect"><div class="sect-in">
+          <div class="sect-head"><div class="tt"><h3>Patient Information</h3><span class="sub">Enter the patient's basic details to add a case.</span></div></div>
+          <div class="panel">
+            <div class="rows">
+              <div class="frow">
+                <div class="field"><label>Case ID <span class="hint">(auto populate)</span></label><div class="ctl dis">MED-0049</div></div>
+                <div class="field"><label>Patient Name</label><input class="ctl" id="f-name" type="text" placeholder="Enter full name"/></div>
+              </div>
+              <div class="frow">
+                <div class="field"><label>Sex</label>
+                  <div class="ctl select" data-key="sex"><span class="val">Select</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg><div class="menu-dd"><div class="opt">Male</div><div class="opt">Female</div></div></div>
+                </div>
+                <div class="field"><label>Patient Age</label><input class="ctl" id="f-age" type="text" inputmode="numeric" placeholder="e.g 34"/></div>
+              </div>
+              <div class="frow">
+                <div class="field"><label>State</label>
+                  <div class="ctl select" data-key="state"><span class="val">Select</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg><div class="menu-dd"><div class="opt">Lagos</div><div class="opt">Kano</div><div class="opt">Abuja (FCT)</div><div class="opt">Rivers</div><div class="opt">Oyo</div><div class="opt">Imo</div></div></div>
+                </div>
+                <div class="field"><label>Local Government (LGA)</label>
+                  <div class="ctl select" data-key="lga"><span class="val">Select</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg><div class="menu-dd"><div class="opt">Lagos Island LGA</div><div class="opt">Ikeja</div><div class="opt">Surulere</div><div class="opt">Eti-Osa</div><div class="opt">Alimosho</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+
+        <div class="sect"><div class="sect-in">
+          <div class="sect-head">
+            <div class="tt"><h3>Extract Blood Sample</h3><span class="sub">Upload the patient's blood sample file or haematology report.</span></div>
+            <button class="btn-blood" id="extractBtn">Extract Blood</button>
+          </div>
+          <div class="panel" style="padding:16px">
+            <div class="uploader" id="uploader">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#d4584a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>
+              <span id="uploaderText">No Blood Extraction Yet</span>
+            </div>
+          </div>
+        </div></div>
+
+        <div class="sect"><div class="sect-in">
+          <div class="sect-head"><div class="tt"><h3>Symptom Selection</h3><span class="sub">Select all symptoms the patient is presenting. </span></div></div>
+          <div class="panel panel-gap24">
+            <div class="chips-zone">
+              <div class="chips" id="chips"></div>
+              <div class="addg">
+                <div class="lbl">Add Symptoms <span class="hint">(If it is not listed above)</span></div>
+                <div class="addrow">
+                  <input class="ctl" id="addInput" type="text" placeholder="Type in symptom"/>
+                  <button class="addbtn" id="addBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add</button>
+                </div>
+              </div>
+            </div>
+            <div class="infog"><label>Any Additional Information?</label><textarea class="ctl" placeholder="Type here"></textarea></div>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="nc-foot"><button class="run" id="runBtn">Run AI Analysis</button></div>
+      </div>
+
+      <!-- Add to existing diagnosis tab -->
+      <div class="tabview" id="tabExist" style="display:none">
+        <div class="nc-body">
+          <div class="sect"><div class="sect-in">
+            <div class="sect-head"><div class="tt"><h3>Patient Information</h3><span class="sub">Enter the patient's basic details to add a case.</span></div></div>
+            <div class="panel">
+              <div class="rows">
+                <div class="frow">
+                  <div class="field"><label>Case ID <span class="hint">(auto populate)</span></label><div class="ctl dis">MED-0049</div></div>
+                  <div class="field"><label>Patient Name</label><input class="ctl" id="f2-name" type="text" placeholder="Enter full name"/></div>
+                </div>
+                <div class="frow">
+                  <div class="field"><label>Sex</label>
+                    <div class="ctl select" data-key="sex"><span class="val">Select</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg><div class="menu-dd"><div class="opt">Male</div><div class="opt">Female</div></div></div>
+                  </div>
+                  <div class="field"><label>Patient Age</label><input class="ctl" id="f2-age" type="text" inputmode="numeric" placeholder="e.g 34"/></div>
+                </div>
+                <div class="frow">
+                  <div class="field"><label>State</label>
+                    <div class="ctl select" data-key="state"><span class="val">Select</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg><div class="menu-dd"><div class="opt">Lagos</div><div class="opt">Kano</div><div class="opt">Abuja (FCT)</div><div class="opt">Rivers</div><div class="opt">Oyo</div><div class="opt">Imo</div></div></div>
+                  </div>
+                  <div class="field"><label>Local Government (LGA)</label>
+                    <div class="ctl select" data-key="lga"><span class="val">Select</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg><div class="menu-dd"><div class="opt">Lagos Island LGA</div><div class="opt">Ikeja</div><div class="opt">Surulere</div><div class="opt">Eti-Osa</div><div class="opt">Alimosho</div></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="field" style="width:100%"><label>Select Diagnosis Group</label>
+                <div class="ctl select" data-key="group"><span class="val">Select</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg><div class="menu-dd"><div class="opt">Hepatitis B</div><div class="opt">Typhoid Fever</div><div class="opt">Lassa Fever</div><div class="opt">Cholera</div><div class="opt">Dengue Fever</div><div class="opt">HIV/AIDS</div><div class="opt">Tuberculosis</div></div></div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+        <div class="nc-foot"><button class="run" id="loginCase2">Log in Case</button></div>
+      </div>
+    </div>
+
+    <!-- loading view -->
+    <div class="loadwrap" id="loadView" style="display:none">
+      <div class="load-col">
+        <div class="load-frame"><div class="load-card">
+          <div class="load-inner">
+            <div class="load-top">
+              <img src="assets/scanner.svg" alt="" />
+              <div class="load-txt"><div class="t">Analyzing sample data...</div><div class="s">Processing Case #MED-0049</div></div>
+            </div>
+            <div class="steps" id="steps">
+              <div class="step"><span class="dot"></span><p>Validating sample inputs</p></div>
+              <div class="step"><span class="dot"></span><p>Running symptom pattern match</p></div>
+              <div class="step"><span class="dot"></span><p>Cross-referencing disease database</p></div>
+              <div class="step"><span class="dot"></span><p>Matching to diagnosis group</p></div>
+              <div class="step"><span class="dot"></span><p>Generating structured report</p></div>
+            </div>
+          </div>
+        </div></div>
+        <button class="minbtn" id="minBtn"><img src="assets/minimize.svg" alt="" /><span>Minimize</span></button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const overlay = $('#overlay'), drawer = $('#drawer');
+  const formView = $('#formView'), loadView = $('#loadView');
+  const screenDash = $('#screen-dash'), screenReport = $('#screen-report');
+
+  // ── carry-over store ──
+  const data = { name:'', sex:'', age:'', state:'', lga:'', symptoms:new Set() };
+
+  // ── open / close drawer ──
+  function openDrawer(){
+    loadView.style.display='none'; formView.style.display='flex';
+    switchTab(false);
+    drawer.scrollTop=0; overlay.classList.add('show'); document.body.style.overflow='hidden';
+  }
+  function closeDrawer(){ overlay.classList.remove('show'); document.body.style.overflow=''; }
+  $('#aiBtn').addEventListener('click', openDrawer);
+  $('#loginCaseBtn').addEventListener('click', openDrawer);
+  $('#closeDrawer').addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', e => { if(e.target===overlay && formView.style.display!=='none') closeDrawer(); });
+
+  // ── tab switching ──
+  const tabBtnNew=$('#tabBtnNew'), tabBtnExist=$('#tabBtnExist');
+  const tabNew=$('#tabNew'), tabExist=$('#tabExist');
+  function switchTab(toExist){
+    tabBtnNew.classList.toggle('active', !toExist);
+    tabBtnExist.classList.toggle('active', toExist);
+    tabNew.style.display = toExist ? 'none' : 'flex';
+    tabExist.style.display = toExist ? 'flex' : 'none';
+    const v = toExist ? tabExist : tabNew;
+    v.classList.remove('anim'); void v.offsetWidth; v.classList.add('anim');
+    drawer.scrollTop = 0;
+  }
+  tabBtnNew.addEventListener('click', ()=>switchTab(false));
+  tabBtnExist.addEventListener('click', ()=>switchTab(true));
+
+  // ── inputs ──
+  $('#f-name').addEventListener('input', e => data.name = e.target.value.trim());
+  $('#f-age').addEventListener('input', e => data.age = e.target.value.replace(/[^0-9]/g,'').slice(0,3));
+  $('#f-age').addEventListener('blur', e => e.target.value = data.age);
+  $('#f2-name').addEventListener('input', e => data.name = e.target.value.trim());
+  $('#f2-age').addEventListener('input', e => data.age = e.target.value.replace(/[^0-9]/g,'').slice(0,3));
+  $('#f2-age').addEventListener('blur', e => e.target.value = data.age);
+
+  // ── custom selects ──
+  document.querySelectorAll('.select').forEach(sel=>{
+    const val = sel.querySelector('.val'), key = sel.dataset.key;
+    sel.addEventListener('click', e=>{
+      const opt = e.target.closest('.opt');
+      if(opt){ sel.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel')); opt.classList.add('sel');
+        val.textContent=opt.textContent; val.classList.add('filled'); data[key]=opt.textContent; sel.classList.remove('open'); return; }
+      const open = sel.classList.contains('open');
+      document.querySelectorAll('.select.open').forEach(s=>s.classList.remove('open'));
+      sel.classList.toggle('open', !open);
+    });
+  });
+  document.addEventListener('click', e=>{ if(!e.target.closest('.select')) document.querySelectorAll('.select.open').forEach(s=>s.classList.remove('open')); });
+
+  // ── symptom chips ──
+  const DEFAULT=["Chest Pain","Shortness of Breath","Dizziness","Headache","Loss of Appetite","Throat Irritation","Rapid Heartbeat","Blurred Vision","Muscle Weakness"];
+  const chips=$('#chips');
+  const ckSVG='<span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>';
+  const rmSVG='<span class="rm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span>';
+  function makeChip(name,{custom=false,entering=false}={}){
+    const c=document.createElement('button'); c.className='chip'+(custom?' custom':'')+(entering?' entering':''); c.dataset.name=name;
+    c.innerHTML=ckSVG+'<span>'+name+'</span>'+(custom?rmSVG:'');
+    c.addEventListener('click', e=>{
+      if(custom && e.target.closest('.rm')){ data.symptoms.delete(name); c.style.transition='opacity .2s,transform .2s'; c.style.opacity='0'; c.style.transform='scale(.7)'; setTimeout(()=>c.remove(),200); return; }
+      if(data.symptoms.has(name)){ data.symptoms.delete(name); c.classList.remove('sel'); } else { data.symptoms.add(name); c.classList.add('sel'); }
+    });
+    return c;
+  }
+  DEFAULT.forEach(s=>chips.appendChild(makeChip(s)));
+  const addInput=$('#addInput'), addBtn=$('#addBtn');
+  function addCustom(){
+    const raw=addInput.value.trim(); if(!raw){ addInput.focus(); return; }
+    const name=raw.replace(/\s+/g,' ');
+    const exist=[...chips.children].find(c=>c.dataset.name.toLowerCase()===name.toLowerCase());
+    if(exist){ if(!data.symptoms.has(exist.dataset.name)) exist.click(); exist.classList.remove('entering'); void exist.offsetWidth; exist.classList.add('entering'); addInput.value=''; return; }
+    const c=makeChip(name,{custom:true,entering:true}); chips.appendChild(c); data.symptoms.add(name); c.classList.add('sel'); addInput.value=''; addInput.focus();
+  }
+  addBtn.addEventListener('click', addCustom);
+  addInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addCustom(); } });
+
+  // ── extract blood ──
+  const uploader=$('#uploader'), uploaderText=$('#uploaderText'), extractBtn=$('#extractBtn');
+  extractBtn.addEventListener('click', ()=>{
+    if(uploader.classList.contains('done')) return;
+    extractBtn.textContent='Extracting…';
+    setTimeout(()=>{ uploader.classList.add('done'); uploaderText.textContent='haematology_report_MED-0049.pdf · extracted'; extractBtn.textContent='Re-extract'; },900);
+  });
+
+  // ── run analysis → loading → report ──
+  const steps=[...$('#steps').querySelectorAll('.step')];
+  let loadTimers=[];
+  function clearLoad(){ loadTimers.forEach(clearTimeout); loadTimers=[]; }
+  $('#runBtn').addEventListener('click', ()=>{
+    formView.style.display='none'; loadView.style.display='flex'; drawer.scrollTop=0;
+    steps.forEach(s=>s.classList.remove('active','done'));
+    let i=0;
+    const advance=()=>{
+      if(i>0) steps[i-1].classList.replace('active','done');
+      if(i<steps.length){ steps[i].classList.add('active'); i++; loadTimers.push(setTimeout(advance,680)); }
+      else { loadTimers.push(setTimeout(goReport,650)); }
+    };
+    advance();
+  });
+  $('#minBtn').addEventListener('click', ()=>{ clearLoad(); closeDrawer(); });
+
+  // ── log in case (existing diagnosis tab) ──
+  $('#loginCase2').addEventListener('click', closeDrawer);
+
+  // ── go to report (carry form data through; design defaults remain when blank) ──
+  function goReport(){
+    populateReport();
+    closeDrawer();
+    screenDash.classList.remove('active');
+    screenReport.classList.add('active');
+    window.scrollTo(0,0);
+  }
+  function populateReport(){
+    if(data.name) $('#r-name').textContent = data.name;
+    if(data.age || data.sex) $('#r-agesex').textContent = (data.age||'22') + ' yrs · ' + (data.sex||'Male');
+    if(data.lga || data.state) $('#r-state').textContent = data.lga || data.state;
+    if(data.symptoms.size){
+      $('#r-symptoms').innerHTML = '<div class="sym-set">' + [...data.symptoms].map(s=>'<span class="sym-chip">'+s+'</span>').join('') + '</div>';
+    }
+  }
+
+  // ── table row hover (column-based table: light up the same row in every column) ──
+  const rcTable = document.querySelector('.rc-table');
+  if (rcTable) {
+    const cols = [...rcTable.querySelectorAll('.rc-col')];
+    rcTable.addEventListener('mouseover', e => {
+      const td = e.target.closest('.rc-td'); if (!td) return;
+      const col = td.closest('.rc-col');
+      const idx = [...col.querySelectorAll('.rc-td')].indexOf(td);
+      cols.forEach(c => c.querySelectorAll('.rc-td').forEach((cell, i) => cell.classList.toggle('row-hover', i === idx)));
+    });
+    rcTable.addEventListener('mouseleave', () => rcTable.querySelectorAll('.rc-td.row-hover').forEach(c => c.classList.remove('row-hover')));
+  }
+
+  // ── report actions / nav ──
+  function backToDash(){
+    screenReport.classList.remove('active'); screenDash.classList.add('active'); window.scrollTo(0,0);
+  }
+  function toReport(){
+    screenDash.classList.remove('active'); screenReport.classList.add('active'); window.scrollTo(0,0);
+  }
+  $('#cancelCase').addEventListener('click', backToDash);
+  $('#confirmCase').addEventListener('click', backToDash);
+  document.querySelectorAll('[data-nav="dash"]').forEach(b=>b.addEventListener('click', backToDash));
+  document.querySelectorAll('[data-nav="report"]').forEach(b=>b.addEventListener('click', toReport));
+})();
+</script>
+</body>
+</html>

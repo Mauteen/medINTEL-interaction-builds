@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MedINTEL — Interaction Builds</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      background: #fbfaf6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      gap: 48px;
+    }
+    header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #BE6D32;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 600;
+      color: #1f1d1a;
+    }
+    .subtitle {
+      font-size: 15px;
+      color: #7a7570;
+    }
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      max-width: 900px;
+      width: 100%;
+    }
+    a.card {
+      background: #fff;
+      border: 1px solid #e8e4de;
+      border-radius: 16px;
+      padding: 28px 32px;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 260px;
+      transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+    }
+    a.card:hover {
+      box-shadow: 0 8px 32px rgba(31,29,26,.10);
+      transform: translateY(-2px);
+      border-color: #BE6D32;
+    }
+    .card-num {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: #BE6D32;
+      text-transform: uppercase;
+    }
+    .card-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: #1f1d1a;
+      line-height: 1.3;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: #7a7570;
+      line-height: 1.5;
+    }
+    .card-arrow {
+      margin-top: 8px;
+      font-size: 18px;
+      color: #BE6D32;
+    }
+    footer {
+      font-size: 12px;
+      color: #b0aa9f;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="label">MedINTEL UI</span>
+    <h1>Interaction Builds</h1>
+    <p class="subtitle">Interactive prototypes from the MedINTEL healthcare dashboard design</p>
+  </header>
+
+  <div class="grid">
+    <a class="card" href="./01-diagnoses-tab-switch/">
+      <span class="card-num">Build 01</span>
+      <span class="card-title">Diagnoses Tab Switch</span>
+      <p class="card-desc">Tab filtering between All, Known, and Unknown diagnoses with animated card transitions.</p>
+      <span class="card-arrow">→</span>
+    </a>
+    <a class="card" href="./02-symptom-selection/">
+      <span class="card-num">Build 02</span>
+      <span class="card-title">Symptom Selection</span>
+      <p class="card-desc">New Case drawer with interactive symptom chip selection and custom symptom input.</p>
+      <span class="card-arrow">→</span>
+    </a>
+    <a class="card" href="./03-case-flow/">
+      <span class="card-num">Build 03</span>
+      <span class="card-title">Full Case Flow</span>
+      <p class="card-desc">Connected 4-screen prototype — Dashboard → New Case → AI Analysis → Report.</p>
+      <span class="card-arrow">→</span>
+    </a>
+  </div>
+
+  <footer>MedINTEL · Interactive prototypes</footer>
+</body>
+</html>
