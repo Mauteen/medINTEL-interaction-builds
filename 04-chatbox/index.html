@@ -48,28 +48,50 @@
     animation: fadeUp 0.7s 0.15s var(--ease) both;
   }
 
-  /* The spinning conic-gradient ring — sits behind chat-outer */
-  .chat-glow {
+  /*
+    Ring glow — three layers:
+    1. .glow-ring   clips everything to a thin band outside the chatbox
+    2. .glow-spin   a huge conic-gradient element that spins inside the clip
+    3. .glow-cover  fills the interior back with page background,
+                    leaving only the border band visible
+  */
+  .glow-ring {
     position: absolute;
-    inset: -5px;
-    border-radius: 20px;
+    inset: -9px;
+    border-radius: 24px;
     z-index: 0;
+    overflow: hidden;
+  }
+
+  .glow-spin {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 900px; height: 900px;
+    transform: translate(-50%, -50%);
     background: conic-gradient(
       from 0deg,
-      transparent           0deg,
-      transparent         335deg,
-      rgba(190,109,50,.50) 344deg,
-      rgba(248,186,141,.70) 350deg,
-      rgba(190,109,50,.50) 356deg,
-      transparent         360deg
+      transparent 0%,
+      transparent 48%,
+      rgba(190,109,50,0.55) 49.3%,
+      rgba(248,186,141,0.85) 50%,
+      rgba(190,109,50,0.55) 50.7%,
+      transparent 52%,
+      transparent 100%
     );
     filter: blur(5px);
-    animation: glowSpin 5s linear infinite;
-    opacity: 0.85;
+    animation: glowSpin 6s linear infinite;
     will-change: transform;
   }
   @keyframes glowSpin {
-    to { transform: rotate(360deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  /* Covers the interior — only the 9px ring remains */
+  .glow-cover {
+    position: absolute;
+    inset: 9px;
+    border-radius: 15px;
+    background: var(--cream);
   }
 
   /* ══════════════════════════════════════
@@ -269,7 +291,10 @@
 
 <!-- ══════ CHATBOX ══════ -->
 <div class="chat-wrap">
-<div class="chat-glow"></div>
+<div class="glow-ring">
+  <div class="glow-spin"></div>
+  <div class="glow-cover"></div>
+</div>
 <div class="chat-outer" id="chatOuter">
 
   <!-- States 1 & 2 : typing view -->
