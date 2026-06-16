@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MedINTEL — AI Chatbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #be6d32;
+    --ink:     #1f1f1f;
+    --secondary: #6b6761;
+    --muted:   #b7b1a8;
+    --cream:   #fbfaf6;
+    --ease:    cubic-bezier(.22,1,.36,1);
+    --grad: linear-gradient(180deg,
+      rgba(245,192,153,0.20)  0%,
+      rgba(223,145,88, 0.30) 59.14%,
+      rgba(207,127,69, 0.30) 74.04%,
+      rgba(248,186,141,0.50) 99.52%
+    );
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--cream);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 48px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Label above chatbox ── */
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.1s var(--ease) both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ══════════════════════════════════════
+     Outer gradient "border" container
+  ══════════════════════════════════════ */
+  .chat-outer {
+    position: relative;
+    width: 540px;
+    max-width: calc(100vw - 48px);
+    height: 150px;
+    border-radius: 15px;
+    background: var(--grad);
+    padding: 6px;
+    overflow: hidden;
+    transition: height 0.58s var(--ease), box-shadow 0.5s ease;
+    box-shadow: 0 2px 20px rgba(190,109,50,0);
+    animation: fadeUp 0.7s 0.2s var(--ease) both;
+  }
+
+  /* Warm glow that pulses during listening */
+  .chat-outer.listening {
+    height: 78px;
+    animation: fadeUp 0s both, glowPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes glowPulse {
+    0%,100% { box-shadow: 0 4px 28px rgba(190,109,50,0.14); }
+    50%     { box-shadow: 0 4px 44px rgba(190,109,50,0.28); }
+  }
+
+  /* ══════════════════════════════════════
+     Shared: both inner states are abs-pos
+     inside the gradient wrapper
+  ══════════════════════════════════════ */
+  .chat-inner, .chat-listen {
+    position: absolute;
+    top: 6px; left: 6px;
+    width: calc(100% - 12px);
+    background: #fff;
+    border-radius: 10px;
+  }
+
+  /* ── STATE 1 & 2 : textarea view ── */
+  .chat-inner {
+    height: 138px;           /* 150 outer − 6 top − 6 bottom padding */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 18px 20px 16px;
+    opacity: 1;
+    transform: none;
+    pointer-events: all;
+    transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
+  }
+  .chat-outer.listening .chat-inner {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+    pointer-events: none;
+  }
+
+  textarea.chat-ta {
+    flex: 1;
+    resize: none;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink);
+    width: 100%;
+    min-height: 0;
+    scrollbar-width: none;
+  }
+  textarea.chat-ta::-webkit-scrollbar { display: none; }
+  textarea.chat-ta::placeholder { color: var(--muted); }
+
+  .chat-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    align-self: flex-end;
+    margin-top: 6px;
+  }
+
+  /* ── STATE 3 : listening pill ── */
+  .chat-listen {
+    height: 66px;           /* 78 outer − 6 top − 6 bottom */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    /* delay until container has started collapsing */
+    transition: opacity 0.3s var(--ease) 0.24s,
+                transform 0.3s var(--ease) 0.24s;
+  }
+  .chat-outer.listening .chat-listen {
+    opacity: 1;
+    transform: none;
+    pointer-events: all;
+  }
+
+  /* Centre section: waveform + text */
+  .listen-center {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* ── Animated waveform bars ── */
+  .waveform {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 20px;
+  }
+  .wave-bar {
+    width: 3px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #be6d32 0%, #df9158 100%);
+    transform-origin: center;
+    animation: waveBounce 1.15s ease-in-out infinite;
+    animation-play-state: paused;
+    will-change: transform;
+  }
+  .chat-outer.listening .wave-bar { animation-play-state: running; }
+
+  .wave-bar:nth-child(1) { height:  8px; animation-delay: 0s;    }
+  .wave-bar:nth-child(2) { height: 17px; animation-delay: 0.20s; }
+  .wave-bar:nth-child(3) { height: 21px; animation-delay: 0.08s; }
+  .wave-bar:nth-child(4) { height: 13px; animation-delay: 0.30s; }
+  .wave-bar:nth-child(5) { height:  7px; animation-delay: 0.14s; }
+
+  @keyframes waveBounce {
+    0%,100% { transform: scaleY(1);    opacity: 1;   }
+    50%     { transform: scaleY(0.22); opacity: 0.55; }
+  }
+
+  /* Gradient italic brand + plain text */
+  .listen-text { font-size: 15px; white-space: nowrap; }
+  .listen-brand {
+    font-style: italic;
+    background: linear-gradient(180deg, #be6d32 0%, #df9158 59.14%, #cf7f45 74.04%, #f8ba8d 99.52%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .listen-plain { color: var(--ink); }
+
+  /* ══════════════════════════════════════
+     Buttons — shared
+  ══════════════════════════════════════ */
+  .chat-btn {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    color: var(--muted);    /* SVG currentColor inherits this */
+    transition: color 0.25s var(--ease),
+                background 0.2s var(--ease),
+                border-color 0.2s var(--ease),
+                transform 0.15s var(--ease);
+  }
+  .chat-btn:active { transform: scale(0.9); }
+
+  /* Mic */
+  .mic-btn:hover { background: rgba(190,109,50,0.07); color: var(--secondary); }
+
+  /* Send — default: cream bg, barely-visible border */
+  .send-btn {
+    background: var(--cream);
+    border: 1.2px solid rgba(239,234,227,0.3);
+  }
+  .send-btn:hover { background: #f6efe5; border-color: rgba(190,109,50,0.2); }
+
+  /* Send — active (text entered OR in listen) */
+  .chat-inner.has-text .send-btn,
+  .chat-listen .send-btn {
+    border-color: rgba(190,109,50,0.25);
+    color: var(--primary);
+  }
+
+  /* Close (X) */
+  .close-btn { color: var(--secondary); }
+  .close-btn:hover { background: rgba(190,109,50,0.07); color: var(--ink); }
+
+  /* Hint below the box */
+  .hint {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    animation: fadeUp 0.7s 0.4s var(--ease) both;
+  }
+  .hint kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 5px;
+    border: 1px solid rgba(183,177,168,0.4);
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 11px;
+    color: var(--muted);
+    background: #fff;
+  }
+</style>
+</head>
+<body>
+
+<span class="label">MedINTEL AI · Chatbox Interaction</span>
+
+<!-- ══════ CHATBOX ══════ -->
+<div class="chat-outer" id="chatOuter">
+
+  <!-- States 1 & 2 : typing view -->
+  <div class="chat-inner" id="chatInner">
+    <textarea
+      class="chat-ta"
+      id="chatInput"
+      placeholder="Type in your question or use the mic..."
+    ></textarea>
+    <div class="chat-actions">
+      <!-- Mic button -->
+      <button class="chat-btn mic-btn" id="micBtn" aria-label="Voice input">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="2" width="6" height="11" rx="3"/>
+          <path d="M5 10a7 7 0 0 0 14 0"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="9"  y1="22" x2="15" y2="22"/>
+        </svg>
+      </button>
+      <!-- Send button -->
+      <button class="chat-btn send-btn" id="sendBtnText" aria-label="Send">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 2L11 13"/>
+          <path d="M22 2L15 22 11 13 2 9l20-7z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- State 3 : listening pill -->
+  <div class="chat-listen" id="chatListen">
+    <!-- X close -->
+    <button class="chat-btn close-btn" id="closeListenBtn" aria-label="Stop listening">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <path d="M18 6 6 18M6 6l12 12"/>
+      </svg>
+    </button>
+    <!-- Waveform + text -->
+    <div class="listen-center">
+      <div class="waveform">
+        <span class="wave-bar"></span>
+        <span class="wave-bar"></span>
+        <span class="wave-bar"></span>
+        <span class="wave-bar"></span>
+        <span class="wave-bar"></span>
+      </div>
+      <p class="listen-text">
+        <span class="listen-brand">MedIntel AI </span><span class="listen-plain">is Listening...</span>
+      </p>
+    </div>
+    <!-- Send -->
+    <button class="chat-btn send-btn" id="sendBtnListen" aria-label="Send voice">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 2L11 13"/>
+        <path d="M22 2L15 22 11 13 2 9l20-7z"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<span class="hint">Type to see the active state · Click <kbd>🎤</kbd> for voice · Click <kbd>✕</kbd> to dismiss</span>
+
+<script>
+(() => {
+  const outer    = document.getElementById('chatOuter');
+  const inner    = document.getElementById('chatInner');
+  const textarea = document.getElementById('chatInput');
+
+  // ── Typing: toggle has-text (activates send button) ──
+  textarea.addEventListener('input', () => {
+    inner.classList.toggle('has-text', textarea.value.trim().length > 0);
+  });
+
+  // ── Mic: enter listening state ──
+  document.getElementById('micBtn').addEventListener('click', () => {
+    outer.classList.add('listening');
+    textarea.blur();
+  });
+
+  // ── X: exit listening → return to text ──
+  document.getElementById('closeListenBtn').addEventListener('click', () => {
+    outer.classList.remove('listening');
+    // focus textarea after animation completes
+    setTimeout(() => textarea.focus(), 380);
+  });
+
+  // ── Send from listening: submit + reset ──
+  document.getElementById('sendBtnListen').addEventListener('click', () => {
+    outer.classList.remove('listening');
+    textarea.value = '';
+    inner.classList.remove('has-text');
+  });
+
+  // ── Send from text: clear (simulate submission) ──
+  document.getElementById('sendBtnText').addEventListener('click', () => {
+    if (!textarea.value.trim()) return;
+    textarea.style.transition = 'opacity .2s ease';
+    textarea.style.opacity = '0';
+    setTimeout(() => {
+      textarea.value = '';
+      inner.classList.remove('has-text');
+      textarea.style.opacity = '1';
+    }, 200);
+  });
+})();
+</script>
+</body>
+</html>
