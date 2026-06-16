@@ -35,63 +35,15 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* ── Entrance ── */
   @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: none; }
   }
 
-  /* ══════════════════════════════════════
-     Glow wrapper + rotating ring
-  ══════════════════════════════════════ */
   .chat-wrap {
     position: relative;
-    animation: fadeUp 0.7s 0.15s var(--ease) both;
-  }
-
-  /*
-    Ring glow — three layers:
-    1. .glow-ring   clips everything to a thin band outside the chatbox
-    2. .glow-spin   a huge conic-gradient element that spins inside the clip
-    3. .glow-cover  fills the interior back with page background,
-                    leaving only the border band visible
-  */
-  .glow-ring {
-    position: absolute;
-    inset: -9px;
-    border-radius: 24px;
-    z-index: 0;
-    overflow: hidden;
-  }
-
-  .glow-spin {
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 900px; height: 900px;
-    transform: translate(-50%, -50%);
-    background: conic-gradient(
-      from 0deg,
-      transparent 0%,
-      transparent 48%,
-      rgba(190,109,50,0.22) 49.3%,
-      rgba(248,186,141,0.38) 50%,
-      rgba(190,109,50,0.22) 50.7%,
-      transparent 52%,
-      transparent 100%
-    );
-    filter: blur(5px);
-    animation: glowSpin 12s linear infinite;
-    will-change: transform;
-  }
-  @keyframes glowSpin {
-    to { transform: translate(-50%, -50%) rotate(360deg); }
-  }
-
-  /* Covers the interior — only the 9px ring remains */
-  .glow-cover {
-    position: absolute;
-    inset: 9px;
-    border-radius: 15px;
-    background: var(--cream);
+    animation: fadeUp 0.75s 0.1s var(--ease) both;
   }
 
   /* ══════════════════════════════════════
@@ -99,7 +51,6 @@
   ══════════════════════════════════════ */
   .chat-outer {
     position: relative;
-    z-index: 1;
     width: 540px;
     max-width: calc(100vw - 48px);
     height: 150px;
@@ -107,23 +58,38 @@
     background: var(--grad);
     padding: 6px;
     overflow: hidden;
-    transition: height 0.58s var(--ease), box-shadow 0.5s ease;
-    box-shadow: 0 2px 20px rgba(190,109,50,0);
+    /* Idle: gentle shadow breathe */
+    animation: idleBreathe 5s ease-in-out infinite;
+    transition: height    0.58s var(--ease),
+                transform 0.45s var(--ease),
+                box-shadow 0.45s ease;
   }
 
-  /* Extra pulse on the box-shadow when listening */
+  @keyframes idleBreathe {
+    0%,100% { box-shadow: 0 2px 14px rgba(190,109,50,0.07); }
+    50%     { box-shadow: 0 5px 24px rgba(190,109,50,0.13); }
+  }
+
+  /* Focus: lift + warm shadow, pause idle */
+  .chat-outer.focused {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(190,109,50,0.14);
+    animation: none;
+  }
+
+  /* Listening: collapse + pulse */
   .chat-outer.listening {
     height: 78px;
+    transform: none;
     animation: glowPulse 2.4s ease-in-out infinite;
   }
   @keyframes glowPulse {
-    0%,100% { box-shadow: 0 4px 28px rgba(190,109,50,0.14); }
-    50%     { box-shadow: 0 4px 44px rgba(190,109,50,0.28); }
+    0%,100% { box-shadow: 0 4px 28px rgba(190,109,50,0.12); }
+    50%     { box-shadow: 0 6px 40px rgba(190,109,50,0.22); }
   }
 
   /* ══════════════════════════════════════
-     Shared: both inner states are abs-pos
-     inside the gradient wrapper
+     Shared: both inner states
   ══════════════════════════════════════ */
   .chat-inner, .chat-listen {
     position: absolute;
@@ -135,7 +101,7 @@
 
   /* ── STATE 1 & 2 : textarea view ── */
   .chat-inner {
-    height: 138px;           /* 150 outer − 6 top − 6 bottom padding */
+    height: 138px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -166,7 +132,11 @@
     scrollbar-width: none;
   }
   textarea.chat-ta::-webkit-scrollbar { display: none; }
-  textarea.chat-ta::placeholder { color: var(--muted); }
+  textarea.chat-ta::placeholder {
+    color: var(--muted);
+    transition: color 0.3s ease;
+  }
+  textarea.chat-ta:focus::placeholder { color: rgba(183,177,168,0.5); }
 
   .chat-actions {
     display: flex;
@@ -178,7 +148,7 @@
 
   /* ── STATE 3 : listening pill ── */
   .chat-listen {
-    height: 66px;           /* 78 outer − 6 top − 6 bottom */
+    height: 66px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -186,7 +156,6 @@
     opacity: 0;
     transform: translateY(8px);
     pointer-events: none;
-    /* delay until container has started collapsing */
     transition: opacity 0.3s var(--ease) 0.24s,
                 transform 0.3s var(--ease) 0.24s;
   }
@@ -196,7 +165,7 @@
     pointer-events: all;
   }
 
-  /* Centre section: waveform + text */
+  /* Centre section */
   .listen-center {
     display: flex;
     align-items: center;
@@ -205,7 +174,7 @@
     justify-content: center;
   }
 
-  /* ── Animated waveform bars ── */
+  /* ── Waveform bars ── */
   .waveform {
     display: flex;
     align-items: center;
@@ -234,7 +203,7 @@
     50%     { transform: scaleY(0.22); opacity: 0.55; }
   }
 
-  /* Gradient italic brand + plain text */
+  /* Gradient italic brand text */
   .listen-text { font-size: 15px; white-space: nowrap; }
   .listen-brand {
     font-style: italic;
@@ -246,7 +215,7 @@
   .listen-plain { color: var(--ink); }
 
   /* ══════════════════════════════════════
-     Buttons — shared
+     Buttons
   ══════════════════════════════════════ */
   .chat-btn {
     width: 40px; height: 40px;
@@ -256,29 +225,40 @@
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
-    color: var(--muted);    /* SVG currentColor inherits this */
-    transition: color 0.25s var(--ease),
-                background 0.2s var(--ease),
+    color: var(--muted);
+    transition: color      0.25s var(--ease),
+                background 0.2s  var(--ease),
                 border-color 0.2s var(--ease),
-                transform 0.15s var(--ease);
+                transform  0.18s var(--ease);
   }
-  .chat-btn:active { transform: scale(0.9); }
+  .chat-btn:active { transform: scale(0.88); }
 
   /* Mic */
-  .mic-btn:hover { background: rgba(190,109,50,0.07); color: var(--secondary); }
+  .mic-btn:hover {
+    background: rgba(190,109,50,0.07);
+    color: var(--secondary);
+    transform: scale(1.08);
+  }
 
-  /* Send — default: cream bg, barely-visible border */
+  /* Send — default */
   .send-btn {
     background: var(--cream);
     border: 1.2px solid rgba(239,234,227,0.3);
   }
   .send-btn:hover { background: #f6efe5; border-color: rgba(190,109,50,0.2); }
 
-  /* Send — active (text entered OR in listen) */
+  /* Send — active: small pop animation when it first becomes active */
   .chat-inner.has-text .send-btn,
   .chat-listen .send-btn {
     border-color: rgba(190,109,50,0.25);
     color: var(--primary);
+  }
+  .chat-inner.has-text .send-btn {
+    animation: sendPop 0.35s var(--ease) both;
+  }
+  @keyframes sendPop {
+    from { transform: scale(0.85); opacity: 0.6; }
+    to   { transform: scale(1);    opacity: 1;   }
   }
 
   /* Close (X) */
@@ -291,10 +271,6 @@
 
 <!-- ══════ CHATBOX ══════ -->
 <div class="chat-wrap">
-<div class="glow-ring">
-  <div class="glow-spin"></div>
-  <div class="glow-cover"></div>
-</div>
 <div class="chat-outer" id="chatOuter">
 
   <!-- States 1 & 2 : typing view -->
@@ -355,8 +331,8 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
            stroke="currentColor" stroke-width="1.7"
            stroke-linecap="round" stroke-linejoin="round">
-        <path d="M22 2L11 13"/>
         <path d="M22 2L15 22 11 13 2 9l20-7z"/>
+        <path d="M22 2L11 13"/>
       </svg>
     </button>
   </div>
@@ -370,32 +346,36 @@
   const inner    = document.getElementById('chatInner');
   const textarea = document.getElementById('chatInput');
 
-  // ── Typing: toggle has-text (activates send button) ──
+  // Focus lift
+  textarea.addEventListener('focus', () => outer.classList.add('focused'));
+  textarea.addEventListener('blur',  () => outer.classList.remove('focused'));
+
+  // Typing: toggle has-text (activates send button)
   textarea.addEventListener('input', () => {
     inner.classList.toggle('has-text', textarea.value.trim().length > 0);
   });
 
-  // ── Mic: enter listening state ──
+  // Mic: enter listening state
   document.getElementById('micBtn').addEventListener('click', () => {
     outer.classList.add('listening');
+    outer.classList.remove('focused');
     textarea.blur();
   });
 
-  // ── X: exit listening → return to text ──
+  // X: exit listening → return to text
   document.getElementById('closeListenBtn').addEventListener('click', () => {
     outer.classList.remove('listening');
-    // focus textarea after animation completes
     setTimeout(() => textarea.focus(), 380);
   });
 
-  // ── Send from listening: submit + reset ──
+  // Send from listening: submit + reset
   document.getElementById('sendBtnListen').addEventListener('click', () => {
     outer.classList.remove('listening');
     textarea.value = '';
     inner.classList.remove('has-text');
   });
 
-  // ── Send from text: clear (simulate submission) ──
+  // Send from text: fade out → clear
   document.getElementById('sendBtnText').addEventListener('click', () => {
     if (!textarea.value.trim()) return;
     textarea.style.transition = 'opacity .2s ease';
