@@ -30,27 +30,46 @@
     background: var(--cream);
     min-height: 100vh;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 48px;
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ── Label above chatbox ── */
-  .label {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    color: var(--muted);
-    text-align: center;
-    opacity: 0;
-    animation: fadeUp 0.7s 0.1s var(--ease) both;
-  }
   @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: none; }
+  }
+
+  /* ══════════════════════════════════════
+     Glow wrapper + rotating ring
+  ══════════════════════════════════════ */
+  .chat-wrap {
+    position: relative;
+    animation: fadeUp 0.7s 0.15s var(--ease) both;
+  }
+
+  /* The spinning conic-gradient ring — sits behind chat-outer */
+  .chat-glow {
+    position: absolute;
+    inset: -5px;
+    border-radius: 20px;
+    z-index: 0;
+    background: conic-gradient(
+      from 0deg,
+      transparent           0deg,
+      transparent         335deg,
+      rgba(190,109,50,.50) 344deg,
+      rgba(248,186,141,.70) 350deg,
+      rgba(190,109,50,.50) 356deg,
+      transparent         360deg
+    );
+    filter: blur(5px);
+    animation: glowSpin 5s linear infinite;
+    opacity: 0.85;
+    will-change: transform;
+  }
+  @keyframes glowSpin {
+    to { transform: rotate(360deg); }
   }
 
   /* ══════════════════════════════════════
@@ -58,6 +77,7 @@
   ══════════════════════════════════════ */
   .chat-outer {
     position: relative;
+    z-index: 1;
     width: 540px;
     max-width: calc(100vw - 48px);
     height: 150px;
@@ -67,13 +87,12 @@
     overflow: hidden;
     transition: height 0.58s var(--ease), box-shadow 0.5s ease;
     box-shadow: 0 2px 20px rgba(190,109,50,0);
-    animation: fadeUp 0.7s 0.2s var(--ease) both;
   }
 
-  /* Warm glow that pulses during listening */
+  /* Extra pulse on the box-shadow when listening */
   .chat-outer.listening {
     height: 78px;
-    animation: fadeUp 0s both, glowPulse 2.4s ease-in-out infinite;
+    animation: glowPulse 2.4s ease-in-out infinite;
   }
   @keyframes glowPulse {
     0%,100% { box-shadow: 0 4px 28px rgba(190,109,50,0.14); }
@@ -244,32 +263,13 @@
   .close-btn { color: var(--secondary); }
   .close-btn:hover { background: rgba(190,109,50,0.07); color: var(--ink); }
 
-  /* Hint below the box */
-  .hint {
-    font-size: 12px;
-    color: var(--muted);
-    text-align: center;
-    animation: fadeUp 0.7s 0.4s var(--ease) both;
-  }
-  .hint kbd {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1px 5px;
-    border: 1px solid rgba(183,177,168,0.4);
-    border-radius: 5px;
-    font-family: inherit;
-    font-size: 11px;
-    color: var(--muted);
-    background: #fff;
-  }
 </style>
 </head>
 <body>
 
-<span class="label">MedINTEL AI · Chatbox Interaction</span>
-
 <!-- ══════ CHATBOX ══════ -->
+<div class="chat-wrap">
+<div class="chat-glow"></div>
 <div class="chat-outer" id="chatOuter">
 
   <!-- States 1 & 2 : typing view -->
@@ -337,8 +337,7 @@
   </div>
 
 </div>
-
-<span class="hint">Type to see the active state · Click <kbd>🎤</kbd> for voice · Click <kbd>✕</kbd> to dismiss</span>
+</div>
 
 <script>
 (() => {
