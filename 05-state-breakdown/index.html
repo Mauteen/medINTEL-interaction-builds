@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MedINTEL — State Breakdown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #be6d32;
+    --ink:     #1f1f1f;
+    --secondary: #6b6761;
+    --muted:   #b7b1a8;
+    --cream:   #fbfaf6;
+    --ease:    cubic-bezier(.22,1,.36,1);
+    --spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #ede8e0;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 24px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .page {
+    width: 100%;
+    max-width: 1200px;
+    animation: fadeUp 0.7s 0.05s var(--ease) both;
+  }
+
+  /* ── Outer cream card ── */
+  .card-container {
+    background: var(--cream);
+    border: 1px solid rgba(239,234,227,0.5);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  /* ── Left: states panel ── */
+  .states-panel {
+    flex: 1;
+    min-width: 0;
+    background: #fff;
+    border: 1px solid rgba(231,225,216,0.4);
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .states-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .zone { display: flex; flex-direction: column; gap: 8px; }
+
+  .zone-label {
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--secondary);
+    padding-left: 2px;
+  }
+
+  .zone-states {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* ── State card ── */
+  .state-card {
+    height: 40px;
+    width: 110px;
+    border-radius: 7px;
+    border: 1px solid #f5f2ed;
+    background: rgba(255,255,255,0.5);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--secondary);
+    cursor: pointer;
+    letter-spacing: 0.2px;
+    transition:
+      background    0.22s var(--ease),
+      border-color  0.22s var(--ease),
+      color         0.22s var(--ease),
+      box-shadow    0.22s var(--ease);
+  }
+
+  .state-card:hover:not(.active) {
+    background: rgba(190,109,50,0.05);
+    border-color: rgba(190,109,50,0.18);
+    color: var(--secondary);
+  }
+
+  .state-card.active {
+    background: rgba(190,109,50,0.10);
+    border-color: rgba(190,109,50,0.18);
+    color: var(--primary);
+    box-shadow: 0 2px 8px rgba(190,109,50,0.10);
+  }
+
+  .state-card.muted {
+    opacity: 0.65;
+    color: var(--muted);
+  }
+  .state-card.muted.active {
+    opacity: 1;
+    color: var(--primary);
+  }
+
+  /* Bouncy click animation */
+  @keyframes cardBounce {
+    0%   { transform: scale(1); }
+    22%  { transform: scale(0.91); }
+    50%  { transform: scale(1.06); }
+    72%  { transform: scale(0.97); }
+    88%  { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+  .state-card.bouncing {
+    animation: cardBounce 0.48s var(--ease);
+  }
+
+  /* ── Right: breakdown panel ── */
+  .breakdown-panel {
+    width: 258px;
+    flex-shrink: 0;
+    background: var(--cream);
+    border: 1px solid rgba(239,234,227,0.5);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: sticky;
+    top: 32px;
+  }
+
+  .breakdown-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .breakdown-header span {
+    font-size: 13px;
+    color: var(--secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Selected state name */
+  .breakdown-state {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    padding: 0 2px;
+    transition: opacity 0.18s ease, transform 0.18s var(--ease);
+  }
+  .breakdown-state.updating {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  /* Metric card */
+  .metric-card {
+    background: #fefefe;
+    border: 1px solid rgba(231,225,216,0.4);
+    border-radius: 12px;
+    padding: 14px 12px 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* Bar chart */
+  .bars-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 160px;
+    position: relative;
+  }
+
+  .bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+    position: relative;
+  }
+
+  /* Bar track: fixed height, bar sits inside from bottom */
+  .bar-track {
+    position: relative;
+    width: 100%;
+    flex: 1;
+  }
+
+  .bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 10px 10px 0 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 6px 4px;
+    overflow: hidden;
+    min-height: 30px;
+    transition: height 0.58s var(--spring);
+  }
+
+  .bar-active  { background: #fffbeb; border: 1px solid rgba(245,158,11,0.12); }
+  .bar-cleared { background: #f0fdf4; border: 1px solid rgba(34,197,94,0.12);  }
+  .bar-deaths  { background: #fef2f2; border: 1px solid rgba(239,68,68,0.12);  }
+
+  .bar-value {
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1;
+    white-space: nowrap;
+    transition: opacity 0.12s ease;
+  }
+  .bar-active  .bar-value { color: #d97706; }
+  .bar-cleared .bar-value { color: #15803d; }
+  .bar-deaths  .bar-value { color: #dc2626; }
+
+  .bar-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="card-container">
+
+    <!-- ══ LEFT: States ══ -->
+    <div class="states-panel">
+      <div class="states-inner" id="zonesContainer"></div>
+    </div>
+
+    <!-- ══ RIGHT: Breakdown ══ -->
+    <div class="breakdown-panel">
+      <div class="breakdown-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="#6b6761" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span>State cases breakdown</span>
+      </div>
+
+      <div class="breakdown-state" id="breakdownStateName">Sokoto</div>
+
+      <div class="metric-card">
+        <div class="bars-wrap">
+          <!-- Active Cases -->
+          <div class="bar-col">
+            <div class="bar-track">
+              <div class="bar bar-active" id="barActive">
+                <span class="bar-value" id="valActive">10,000</span>
+              </div>
+            </div>
+            <span class="bar-label">Active</span>
+          </div>
+          <!-- Cleared Cases -->
+          <div class="bar-col">
+            <div class="bar-track">
+              <div class="bar bar-cleared" id="barCleared">
+                <span class="bar-value" id="valCleared">2,300</span>
+              </div>
+            </div>
+            <span class="bar-label">Cleared</span>
+          </div>
+          <!-- Death Cases -->
+          <div class="bar-col">
+            <div class="bar-track">
+              <div class="bar bar-deaths" id="barDeaths">
+                <span class="bar-value" id="valDeaths">10</span>
+              </div>
+            </div>
+            <span class="bar-label">Deaths</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(() => {
+  /* ── Data ── */
+  const zones = [
+    { name: 'North West',   states: ['Sokoto','Kebbi','Zamfara','Katsina','Kano','Jigawa','Kaduna'],          muted: ['Kaduna'] },
+    { name: 'North East',   states: ['Borno','Yobe','Adamawa','Gombe','Bauchi','Taraba'],                     muted: ['Bauchi'] },
+    { name: 'North Central',states: ['Niger','Kwara','Kogi','Benue','Plateau','Nasarawa','FCT Abuja'],         muted: ['Kogi'] },
+    { name: 'South West',   states: ['Oyo','Ogun','Lagos','Osun','Ondo','Ekiti'],                             muted: ['Ondo'] },
+    { name: 'South East',   states: ['Enugu','Anambra','Imo','Abia','Ebonyi'],                                muted: ['Anambra'] },
+    { name: 'South South',  states: ['Rivers','Bayelsa','Delta','Edo','Cross River','Akwa Ibom'],             muted: ['Cross River'] },
+  ];
+
+  const stats = {
+    'Sokoto':     { active: 10000, cleared: 2300,  deaths: 10 },
+    'Kebbi':      { active:  7200, cleared: 3800,  deaths: 18 },
+    'Zamfara':    { active:  8500, cleared: 1900,  deaths: 31 },
+    'Katsina':    { active:  6300, cleared: 4200,  deaths: 14 },
+    'Kano':       { active: 15000, cleared: 6800,  deaths: 42 },
+    'Jigawa':     { active:  5100, cleared: 2100,  deaths:  8 },
+    'Kaduna':     { active:  9200, cleared: 3500,  deaths: 27 },
+    'Borno':      { active: 12000, cleared: 2800,  deaths: 55 },
+    'Yobe':       { active:  4800, cleared: 1600,  deaths: 19 },
+    'Adamawa':    { active:  6100, cleared: 2900,  deaths: 13 },
+    'Gombe':      { active:  3900, cleared: 2200,  deaths:  7 },
+    'Bauchi':     { active:  5500, cleared: 1800,  deaths: 23 },
+    'Taraba':     { active:  4200, cleared: 1400,  deaths: 11 },
+    'Niger':      { active:  7800, cleared: 4100,  deaths: 29 },
+    'Kwara':      { active:  5600, cleared: 3200,  deaths: 16 },
+    'Kogi':       { active:  4100, cleared: 2600,  deaths: 20 },
+    'Benue':      { active:  6800, cleared: 3700,  deaths: 25 },
+    'Plateau':    { active:  5900, cleared: 3100,  deaths: 17 },
+    'Nasarawa':   { active:  4400, cleared: 2000,  deaths: 12 },
+    'FCT Abuja':  { active:  8900, cleared: 5600,  deaths: 33 },
+    'Oyo':        { active: 11000, cleared: 5200,  deaths: 38 },
+    'Ogun':       { active:  7400, cleared: 4900,  deaths: 22 },
+    'Lagos':      { active: 18000, cleared: 9500,  deaths: 67 },
+    'Osun':       { active:  5200, cleared: 3300,  deaths: 14 },
+    'Ondo':       { active:  4700, cleared: 2700,  deaths: 21 },
+    'Ekiti':      { active:  3800, cleared: 2100,  deaths:  9 },
+    'Enugu':      { active:  6500, cleared: 3800,  deaths: 19 },
+    'Anambra':    { active:  5300, cleared: 2900,  deaths: 15 },
+    'Imo':        { active:  7100, cleared: 4200,  deaths: 28 },
+    'Abia':       { active:  4900, cleared: 2800,  deaths: 11 },
+    'Ebonyi':     { active:  3600, cleared: 1900,  deaths:  8 },
+    'Rivers':     { active: 13000, cleared: 6100,  deaths: 48 },
+    'Bayelsa':    { active:  4300, cleared: 2100,  deaths: 16 },
+    'Delta':      { active:  8700, cleared: 4800,  deaths: 31 },
+    'Edo':        { active:  7600, cleared: 4300,  deaths: 26 },
+    'Cross River':{ active:  5100, cleared: 2700,  deaths: 18 },
+    'Akwa Ibom':  { active:  6900, cleared: 3900,  deaths: 22 },
+  };
+
+  const MAX_ACTIVE  = 18000; // Lagos
+  const MAX_CLEARED =  9500; // Lagos
+  const MAX_DEATHS  =    67; // Lagos
+  const BAR_MAX_H   =   152; // px — matches bar-track height
+  const BAR_MIN_H   =    32; // px — min so tiny values are visible
+
+  function barH(val, max) {
+    return Math.max(BAR_MIN_H, Math.round((val / max) * BAR_MAX_H));
+  }
+
+  /* ── Number counter ── */
+  let currentActive  = 10000;
+  let currentCleared =  2300;
+  let currentDeaths  =    10;
+
+  function animateCount(el, from, to, duration = 420) {
+    const start = performance.now();
+    const run = (now) => {
+      const p = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(from + (to - from) * ease).toLocaleString();
+      if (p < 1) requestAnimationFrame(run);
+    };
+    requestAnimationFrame(run);
+  }
+
+  /* ── Breakdown update ── */
+  const stateName  = document.getElementById('breakdownStateName');
+  const barActive  = document.getElementById('barActive');
+  const barCleared = document.getElementById('barCleared');
+  const barDeaths  = document.getElementById('barDeaths');
+  const valActive  = document.getElementById('valActive');
+  const valCleared = document.getElementById('valCleared');
+  const valDeaths  = document.getElementById('valDeaths');
+
+  function updateBreakdown(name) {
+    const d = stats[name];
+
+    // Fade state name out → update → fade in
+    stateName.classList.add('updating');
+    setTimeout(() => {
+      stateName.textContent = name;
+      stateName.classList.remove('updating');
+    }, 170);
+
+    // Bar heights animate via CSS spring transition
+    barActive.style.height  = barH(d.active,  MAX_ACTIVE)  + 'px';
+    barCleared.style.height = barH(d.cleared, MAX_CLEARED) + 'px';
+    barDeaths.style.height  = barH(d.deaths,  MAX_DEATHS)  + 'px';
+
+    // Count numbers
+    animateCount(valActive,  currentActive,  d.active);
+    animateCount(valCleared, currentCleared, d.cleared);
+    animateCount(valDeaths,  currentDeaths,  d.deaths);
+
+    currentActive  = d.active;
+    currentCleared = d.cleared;
+    currentDeaths  = d.deaths;
+  }
+
+  /* ── Render zones + cards ── */
+  let activeCard = null;
+  const container = document.getElementById('zonesContainer');
+
+  zones.forEach(zone => {
+    const zoneEl = document.createElement('div');
+    zoneEl.className = 'zone';
+
+    const label = document.createElement('div');
+    label.className = 'zone-label';
+    label.textContent = zone.name;
+    zoneEl.appendChild(label);
+
+    const statesEl = document.createElement('div');
+    statesEl.className = 'zone-states';
+
+    zone.states.forEach(name => {
+      const btn = document.createElement('button');
+      btn.className = 'state-card' + (zone.muted.includes(name) ? ' muted' : '');
+      btn.textContent = name;
+      btn.dataset.state = name;
+
+      // Set initial active
+      if (name === 'Sokoto') {
+        btn.classList.add('active');
+        activeCard = btn;
+      }
+
+      btn.addEventListener('click', () => {
+        if (btn === activeCard) return;
+
+        // Deactivate previous
+        activeCard?.classList.remove('active');
+
+        // Activate this one
+        btn.classList.add('active');
+        activeCard = btn;
+
+        // Bounce animation
+        btn.classList.remove('bouncing');
+        void btn.offsetWidth;
+        btn.classList.add('bouncing');
+        btn.addEventListener('animationend', () => btn.classList.remove('bouncing'), { once: true });
+
+        // Update right panel
+        updateBreakdown(name);
+      });
+
+      statesEl.appendChild(btn);
+    });
+
+    zoneEl.appendChild(statesEl);
+    container.appendChild(zoneEl);
+  });
+
+  /* ── Set initial bar heights (no animation on load) ── */
+  const init = stats['Sokoto'];
+  barActive.style.transition  = 'none';
+  barCleared.style.transition = 'none';
+  barDeaths.style.transition  = 'none';
+  barActive.style.height  = barH(init.active,  MAX_ACTIVE)  + 'px';
+  barCleared.style.height = barH(init.cleared, MAX_CLEARED) + 'px';
+  barDeaths.style.height  = barH(init.deaths,  MAX_DEATHS)  + 'px';
+
+  // Re-enable transitions after initial paint
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    barActive.style.transition  = '';
+    barCleared.style.transition = '';
+    barDeaths.style.transition  = '';
+  }));
+
+})();
+</script>
+</body>
+</html>
