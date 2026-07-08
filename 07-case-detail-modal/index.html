@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MedINTEL — Case Detail Modal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary:   #be6d32;
+    --ink:       #1f1f1f;
+    --secondary: #6b6761;
+    --muted:     #b7b1a8;
+    --cream:     #fbfaf6;
+    --border:    rgba(231,225,216,0.6);
+    --ease:      cubic-bezier(.22,1,.36,1);
+    --spring:    cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #fff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Page ── */
+  .page {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: fadeUp 0.6s var(--ease) both;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .page-title  { font-size: 18px; font-weight: 600; color: var(--ink); }
+  .page-sub    { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .case-count  {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--primary);
+    background: rgba(190,109,50,0.08);
+    padding: 6px 14px; border-radius: 20px;
+  }
+
+  /* ── Case grid ── */
+  .case-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .case-card {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: box-shadow 0.22s ease, border-color 0.22s ease, transform 0.22s var(--ease);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .case-card:hover {
+    box-shadow: 0 6px 24px rgba(190,109,50,0.10);
+    border-color: rgba(190,109,50,0.30);
+    transform: translateY(-2px);
+  }
+  .case-card:active { transform: scale(0.97); }
+
+  .cc-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cc-id   { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.04em; }
+  .cc-badge {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 20px;
+  }
+  .badge-active   { background: rgba(190,109,50,0.10); color: var(--primary); }
+  .badge-cleared  { background: rgba(21,128,61,0.10);  color: #15803d; }
+  .badge-critical { background: rgba(220,38,38,0.10);  color: #dc2626; }
+
+  .cc-name { font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+  .cc-meta { font-size: 12px; color: var(--muted); }
+
+  .cc-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .cc-disease { font-size: 12px; color: var(--secondary); font-weight: 500; }
+  .cc-arrow   { font-size: 14px; color: var(--primary); opacity: 0.6; transition: opacity 0.2s, transform 0.2s; }
+  .case-card:hover .cc-arrow { opacity: 1; transform: translateX(3px); }
+
+  /* ── Modal overlay ── */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(31,29,26,0.40);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal {
+    background: #fff;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    scrollbar-width: none;
+    box-shadow: 0 24px 64px rgba(31,29,26,0.18);
+    transform: translateY(28px) scale(0.97);
+    transition: transform 0.45s var(--spring);
+  }
+  .modal::-webkit-scrollbar { display: none; }
+  .overlay.open .modal {
+    transform: none;
+  }
+
+  /* Modal sections stagger in */
+  .m-section {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+  }
+  .overlay.open .m-section { opacity: 1; transform: none; }
+  .overlay.open .m-section:nth-child(1) { transition-delay: 0.12s; }
+  .overlay.open .m-section:nth-child(2) { transition-delay: 0.20s; }
+  .overlay.open .m-section:nth-child(3) { transition-delay: 0.27s; }
+  .overlay.open .m-section:nth-child(4) { transition-delay: 0.33s; }
+  .overlay.open .m-section:nth-child(5) { transition-delay: 0.38s; }
+
+  /* Modal header */
+  .m-header {
+    padding: 24px 24px 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .m-header-left { display: flex; align-items: center; gap: 14px; }
+  .m-avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: rgba(190,109,50,0.12);
+    color: var(--primary);
+    font-size: 16px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .m-name  { font-size: 17px; font-weight: 600; color: var(--ink); }
+  .m-id    { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .close-btn {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--cream);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s, transform 0.2s var(--spring);
+  }
+  .close-btn:hover { background: #f0e9e0; transform: scale(1.08); }
+  .close-btn svg { width: 14px; height: 14px; stroke: var(--secondary); }
+
+  /* Vitals row */
+  .m-vitals {
+    padding: 18px 24px;
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .vital-tile {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .vital-label { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .vital-value { font-size: 18px; font-weight: 600; color: var(--ink); margin-top: 4px; }
+  .vital-unit  { font-size: 11px; color: var(--muted); margin-left: 2px; }
+
+  /* Info section */
+  .m-info {
+    padding: 18px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .info-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .info-label {
+    font-size: 11px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.05em; width: 100px; flex-shrink: 0; padding-top: 2px;
+  }
+  .info-val { font-size: 13px; color: var(--secondary); line-height: 1.5; }
+  .info-val strong { color: var(--ink); font-weight: 600; }
+
+  /* Mini timeline */
+  .m-timeline {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .m-tl-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px; }
+  .m-tl-track {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .m-tl-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+  }
+  .m-tl-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 7px; left: 50%;
+    width: 100%; height: 1px;
+    background: var(--border);
+    z-index: 0;
+  }
+  .m-tl-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid;
+    background: #fff;
+    z-index: 1;
+    position: relative;
+  }
+  .m-tl-dot.done  { border-color: var(--primary); background: var(--primary); }
+  .m-tl-dot.now   { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(190,109,50,0.15); }
+  .m-tl-dot.next  { border-color: var(--border); background: #fff; }
+  .m-tl-name { font-size: 10px; color: var(--muted); margin-top: 6px; text-align: center; line-height: 1.3; }
+
+  /* Actions */
+  .m-actions {
+    padding: 18px 24px;
+    display: flex;
+    gap: 10px;
+  }
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 13px; font-weight: 600;
+    border: none; cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: opacity 0.2s, transform 0.18s var(--spring);
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-ghost {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    color: var(--secondary);
+  }
+  .btn-ghost:hover { border-color: rgba(190,109,50,0.30); color: var(--primary); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-header">
+    <div>
+      <p class="page-title">Active Cases</p>
+      <p class="page-sub">Click a case to view full details</p>
+    </div>
+    <span class="case-count">6 Cases</span>
+  </div>
+
+  <div class="case-grid" id="caseGrid"></div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <!-- injected dynamically -->
+  </div>
+</div>
+
+<script>
+const cases = [
+  {
+    id: 'MED-2024-0842', name: 'Oluwaseun Adeyemi', initials: 'OA',
+    age: 34, gender: 'Male', state: 'Lagos', status: 'active',
+    disease: 'Lassa Fever',
+    vitals: [{ label: 'Temp', value: '38.4', unit: '°C' }, { label: 'BP', value: '118/76', unit: 'mmHg' }, { label: 'SpO₂', value: '97', unit: '%' }],
+    admitted: 'Dec 14, 2024', physician: 'Dr. Funmi Okafor',
+    symptoms: 'Fever, fatigue, difficulty breathing',
+    notes: 'Responding well to Ribavirin. Viral load declining.',
+    timeline: ['Opened', 'AI Scan', 'Diagnosed', 'Treatment', 'Cleared'],
+    currentStep: 3,
+  },
+  {
+    id: 'MED-2024-0839', name: 'Amina Bello', initials: 'AB',
+    age: 28, gender: 'Female', state: 'Kano', status: 'critical',
+    disease: 'Mpox',
+    vitals: [{ label: 'Temp', value: '39.8', unit: '°C' }, { label: 'BP', value: '102/64', unit: 'mmHg' }, { label: 'SpO₂', value: '93', unit: '%' }],
+    admitted: 'Dec 12, 2024', physician: 'Dr. Ibrahim Musa',
+    symptoms: 'Rash, high fever, lymphadenopathy',
+    notes: 'Transferred to ICU. Antiviral treatment started.',
+    timeline: ['Opened', 'AI Scan', 'Diagnosed', 'Treatment', 'Cleared'],
+    currentStep: 2,
+  },
+  {
+    id: 'MED-2024-0831', name: 'Chukwuemeka Obi', initials: 'CO',
+    age: 51, gender: 'Male', state: 'Enugu', status: 'cleared',
+    disease: 'Cholera',
+    vitals: [{ label: 'Temp', value: '36.8', unit: '°C' }, { label: 'BP', value: '122/80', unit: 'mmHg' }, { label: 'SpO₂', value: '99', unit: '%' }],
+    admitted: 'Dec 5, 2024', physician: 'Dr. Grace Eze',
+    symptoms: 'Acute watery diarrhoea, dehydration, vomiting',
+    notes: 'Fully recovered. Discharged on Dec 11. Follow-up in 2 weeks.',
+    timeline: ['Opened', 'AI Scan', 'Diagnosed', 'Treatment', 'Cleared'],
+    currentStep: 4,
+  },
+  {
+    id: 'MED-2024-0827', name: 'Fatimah Suleiman', initials: 'FS',
+    age: 22, gender: 'Female', state: 'Sokoto', status: 'active',
+    disease: 'Lassa Fever',
+    vitals: [{ label: 'Temp', value: '38.1', unit: '°C' }, { label: 'BP', value: '110/70', unit: 'mmHg' }, { label: 'SpO₂', value: '96', unit: '%' }],
+    admitted: 'Dec 10, 2024', physician: 'Dr. Aisha Umar',
+    symptoms: 'Headache, sore throat, chest pain, vomiting',
+    notes: 'Isolation ongoing. PCR confirmed. Treatment day 4.',
+    timeline: ['Opened', 'AI Scan', 'Diagnosed', 'Treatment', 'Cleared'],
+    currentStep: 3,
+  },
+  {
+    id: 'MED-2024-0819', name: 'Tunde Lawson', initials: 'TL',
+    age: 44, gender: 'Male', state: 'Ogun', status: 'active',
+    disease: 'Meningitis',
+    vitals: [{ label: 'Temp', value: '38.9', unit: '°C' }, { label: 'BP', value: '130/85', unit: 'mmHg' }, { label: 'SpO₂', value: '95', unit: '%' }],
+    admitted: 'Dec 8, 2024', physician: 'Dr. Seun Adewale',
+    symptoms: 'Severe headache, stiff neck, photophobia, nausea',
+    notes: 'Bacterial meningitis. Ceftriaxone IV day 6.',
+    timeline: ['Opened', 'AI Scan', 'Diagnosed', 'Treatment', 'Cleared'],
+    currentStep: 3,
+  },
+  {
+    id: 'MED-2024-0814', name: 'Ngozi Eze', initials: 'NE',
+    age: 39, gender: 'Female', state: 'Rivers', status: 'cleared',
+    disease: 'Typhoid',
+    vitals: [{ label: 'Temp', value: '36.6', unit: '°C' }, { label: 'BP', value: '116/74', unit: 'mmHg' }, { label: 'SpO₂', value: '99', unit: '%' }],
+    admitted: 'Nov 28, 2024', physician: 'Dr. Henry Okonkwo',
+    symptoms: 'Prolonged fever, abdominal pain, rose spots',
+    notes: 'Fully recovered. All cultures negative. Discharged Dec 8.',
+    timeline: ['Opened', 'AI Scan', 'Diagnosed', 'Treatment', 'Cleared'],
+    currentStep: 4,
+  },
+];
+
+const grid = document.getElementById('caseGrid');
+const overlay = document.getElementById('overlay');
+const modal = document.getElementById('modal');
+
+function badgeClass(status) {
+  return status === 'active' ? 'badge-active' : status === 'critical' ? 'badge-critical' : 'badge-cleared';
+}
+function badgeLabel(status) {
+  return status === 'active' ? 'Active' : status === 'critical' ? 'Critical' : 'Cleared';
+}
+
+// Build cards
+cases.forEach((c, i) => {
+  const card = document.createElement('div');
+  card.className = 'case-card';
+  card.style.animationDelay = `${i * 0.07}s`;
+  card.innerHTML = `
+    <div class="cc-top">
+      <span class="cc-id">${c.id}</span>
+      <span class="cc-badge ${badgeClass(c.status)}">${badgeLabel(c.status)}</span>
+    </div>
+    <div>
+      <p class="cc-name">${c.name}</p>
+      <p class="cc-meta">${c.gender}, ${c.age} · ${c.state}</p>
+    </div>
+    <div class="cc-footer">
+      <span class="cc-disease">${c.disease}</span>
+      <span class="cc-arrow">→</span>
+    </div>
+  `;
+  card.addEventListener('click', () => openModal(c));
+  grid.appendChild(card);
+});
+
+function openModal(c) {
+  modal.innerHTML = `
+    <div class="m-section m-header">
+      <div class="m-header-left">
+        <div class="m-avatar">${c.initials}</div>
+        <div>
+          <p class="m-name">${c.name}</p>
+          <p class="m-id">${c.id} · ${c.gender}, ${c.age} · ${c.state} State</p>
+        </div>
+      </div>
+      <button class="close-btn" id="closeBtn">
+        <svg viewBox="0 0 14 14" fill="none" stroke-width="1.8" stroke-linecap="round">
+          <path d="M13 1 1 13M1 1l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="m-section m-vitals">
+      ${c.vitals.map(v => `
+        <div class="vital-tile">
+          <p class="vital-label">${v.label}</p>
+          <p class="vital-value">${v.value}<span class="vital-unit">${v.unit}</span></p>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="m-section m-info">
+      <div class="info-row">
+        <span class="info-label">Diagnosis</span>
+        <span class="info-val"><strong>${c.disease}</strong></span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Admitted</span>
+        <span class="info-val">${c.admitted}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Physician</span>
+        <span class="info-val">${c.physician}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Symptoms</span>
+        <span class="info-val">${c.symptoms}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Notes</span>
+        <span class="info-val">${c.notes}</span>
+      </div>
+    </div>
+
+    <div class="m-section m-timeline">
+      <p class="m-tl-label">Case Progress</p>
+      <div class="m-tl-track">
+        ${c.timeline.map((step, i) => {
+          const cls = i < c.currentStep ? 'done' : i === c.currentStep ? 'now' : 'next';
+          return `<div class="m-tl-step">
+            <div class="m-tl-dot ${cls}"></div>
+            <span class="m-tl-name">${step}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="m-section m-actions">
+      <button class="btn btn-ghost">Download Report</button>
+      <button class="btn btn-primary">Update Case</button>
+    </div>
+  `;
+
+  overlay.classList.add('open');
+  document.getElementById('closeBtn').addEventListener('click', closeModal);
+}
+
+function closeModal() {
+  overlay.classList.remove('open');
+}
+
+overlay.addEventListener('click', e => {
+  if (e.target === overlay) closeModal();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+</body>
+</html>

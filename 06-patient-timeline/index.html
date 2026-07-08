@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MedINTEL — Patient Timeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary:   #be6d32;
+    --ink:       #1f1f1f;
+    --secondary: #6b6761;
+    --muted:     #b7b1a8;
+    --cream:     #fbfaf6;
+    --border:    rgba(231,225,216,0.6);
+    --ease:      cubic-bezier(.22,1,.36,1);
+    --spring:    cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #fff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* ── Patient Header ── */
+  .patient-header {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    animation: fadeUp 0.6s var(--ease) both;
+  }
+
+  .avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: rgba(190,109,50,0.12);
+    color: var(--primary);
+    font-size: 16px;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .patient-info { flex: 1; }
+  .patient-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+  .patient-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .status-pill {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 5px 12px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+  .status-pill.active {
+    background: rgba(190,109,50,0.10);
+    color: var(--primary);
+  }
+  .status-pill.cleared {
+    background: rgba(21,128,61,0.10);
+    color: #15803d;
+  }
+
+  /* ── Timeline ── */
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+
+  .t-event {
+    display: grid;
+    grid-template-columns: 88px 32px 1fr;
+    gap: 0 12px;
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
+  }
+  .t-event.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Left: date/time */
+  .t-date {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-top: 14px;
+    gap: 2px;
+  }
+  .t-date .day   { font-size: 12px; font-weight: 600; color: var(--secondary); }
+  .t-date .clock { font-size: 11px; color: var(--muted); }
+
+  /* Centre: dot + line */
+  .t-spine {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .t-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--primary);
+    background: #fff;
+    margin-top: 18px;
+    flex-shrink: 0;
+    transition: background 0.2s, transform 0.2s var(--spring);
+    z-index: 1;
+  }
+  .t-event:hover .t-dot { background: var(--primary); transform: scale(1.25); }
+  .t-line {
+    width: 1px;
+    flex: 1;
+    background: var(--border);
+    min-height: 24px;
+  }
+  .t-event:last-child .t-line { display: none; }
+
+  /* Right: card */
+  .t-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .t-card:hover {
+    box-shadow: 0 4px 20px rgba(190,109,50,0.08);
+    border-color: rgba(190,109,50,0.25);
+  }
+
+  .t-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .event-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .badge-opened   { background: rgba(190,109,50,0.10); color: var(--primary); }
+  .badge-ai       { background: rgba(99,102,241,0.10);  color: #4f46e5; }
+  .badge-diagnosis{ background: rgba(217,119,6,0.10);   color: #d97706; }
+  .badge-treatment{ background: rgba(21,128,61,0.10);   color: #15803d; }
+  .badge-followup { background: rgba(2,132,199,0.10);   color: #0284c7; }
+  .badge-cleared  { background: rgba(21,128,61,0.10);   color: #15803d; }
+
+  .expand-icon {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--cream);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.3s var(--spring), background 0.2s;
+  }
+  .expand-icon svg {
+    width: 12px; height: 12px;
+    stroke: var(--muted);
+    transition: stroke 0.2s;
+  }
+  .t-card.open .expand-icon {
+    transform: rotate(45deg);
+    background: rgba(190,109,50,0.08);
+  }
+  .t-card.open .expand-icon svg { stroke: var(--primary); }
+
+  .t-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-top: 10px;
+    line-height: 1.4;
+  }
+
+  .t-card-desc {
+    font-size: 13px;
+    color: var(--secondary);
+    margin-top: 4px;
+    line-height: 1.6;
+  }
+
+  /* Expandable detail */
+  .t-card-detail {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.45s var(--ease), opacity 0.35s ease;
+    opacity: 0;
+  }
+  .t-card.open .t-card-detail {
+    max-height: 300px;
+    opacity: 1;
+  }
+
+  .detail-inner {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .detail-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .detail-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    width: 96px;
+    flex-shrink: 0;
+    padding-top: 1px;
+  }
+  .detail-val {
+    font-size: 13px;
+    color: var(--secondary);
+    line-height: 1.5;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Patient Header -->
+  <div class="patient-header">
+    <div class="avatar">OA</div>
+    <div class="patient-info">
+      <p class="patient-name">Oluwaseun Adeyemi</p>
+      <p class="patient-meta">Case #MED-2024-0842 · Male, 34 · Lagos State</p>
+    </div>
+    <span class="status-pill active">Active</span>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline" id="timeline"></div>
+
+</div>
+
+<script>
+const events = [
+  {
+    day: 'Dec 14', clock: '09:32 AM',
+    badge: 'badge-opened', label: 'Case Opened',
+    title: 'Patient registered and case initiated',
+    desc: 'Patient walked in reporting high-grade fever, fatigue, and mild difficulty breathing for 3 days.',
+    details: [
+      { label: 'Reported by',  val: 'Dr. Funmi Okafor' },
+      { label: 'Entry point',  val: 'Emergency Unit, LUTH' },
+      { label: 'Triage level', val: 'Level 2 — Urgent' },
+    ]
+  },
+  {
+    day: 'Dec 14', clock: '10:15 AM',
+    badge: 'badge-ai', label: 'AI Analysis',
+    title: 'MedINTEL AI flagged high-risk indicators',
+    desc: 'System detected symptom cluster matching Lassa fever profile with 84% confidence.',
+    details: [
+      { label: 'Confidence',   val: '84% — Lassa Fever' },
+      { label: 'Flags',        val: 'Haemorrhagic indicators, rapid onset' },
+      { label: 'Suggested',    val: 'Isolate, run PCR, start Ribavirin' },
+    ]
+  },
+  {
+    day: 'Dec 14', clock: '02:40 PM',
+    badge: 'badge-diagnosis', label: 'Diagnosis',
+    title: 'Lab results confirmed — Lassa Fever (Stage II)',
+    desc: 'PCR test returned positive. Patient moved to isolation ward immediately.',
+    details: [
+      { label: 'Test type',  val: 'RT-PCR (Lassa antigen)' },
+      { label: 'Result',     val: 'Positive — Ct value 22.4' },
+      { label: 'Notified',   val: 'NCDC, State Epidemiologist' },
+    ]
+  },
+  {
+    day: 'Dec 15', clock: '08:00 AM',
+    badge: 'badge-treatment', label: 'Treatment',
+    title: 'Antiviral therapy commenced',
+    desc: 'Ribavirin IV initiated per NCDC protocol. Patient vitals monitored every 4 hours.',
+    details: [
+      { label: 'Drug',       val: 'Ribavirin 30mg/kg loading dose' },
+      { label: 'Protocol',   val: 'NCDC Lassa Fever Treatment SOP' },
+      { label: 'Assigned to', val: 'Dr. Chukwu Eze, Infectious Diseases' },
+    ]
+  },
+  {
+    day: 'Dec 18', clock: '11:20 AM',
+    badge: 'badge-followup', label: 'Follow-up',
+    title: 'Day 4 review — patient responding to treatment',
+    desc: 'Fever subsided. Viral load decreasing. Continue current dosage for 5 more days.',
+    details: [
+      { label: 'Temp',      val: '37.2°C (down from 39.8°C)' },
+      { label: 'Viral load', val: 'Ct value 31.7 — significant drop' },
+      { label: 'Next check', val: 'Dec 20, 2024' },
+    ]
+  },
+];
+
+const timeline = document.getElementById('timeline');
+
+events.forEach((ev, i) => {
+  const el = document.createElement('div');
+  el.className = 't-event';
+  el.style.transitionDelay = `${i * 0.08}s`;
+
+  el.innerHTML = `
+    <div class="t-date">
+      <span class="day">${ev.day}</span>
+      <span class="clock">${ev.clock}</span>
+    </div>
+    <div class="t-spine">
+      <div class="t-dot"></div>
+      <div class="t-line"></div>
+    </div>
+    <div class="t-card" id="card-${i}">
+      <div class="t-card-top">
+        <span class="event-badge ${ev.badge}">${ev.label}</span>
+        <div class="expand-icon">
+          <svg viewBox="0 0 12 12" fill="none" stroke-width="1.8" stroke-linecap="round">
+            <line x1="6" y1="1" x2="6" y2="11"/>
+            <line x1="1" y1="6" x2="11" y2="6"/>
+          </svg>
+        </div>
+      </div>
+      <p class="t-card-title">${ev.title}</p>
+      <p class="t-card-desc">${ev.desc}</p>
+      <div class="t-card-detail">
+        <div class="detail-inner">
+          ${ev.details.map(d => `
+            <div class="detail-row">
+              <span class="detail-label">${d.label}</span>
+              <span class="detail-val">${d.val}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+
+  timeline.appendChild(el);
+
+  // expand/collapse on card click
+  const card = el.querySelector('.t-card');
+  card.addEventListener('click', () => {
+    card.classList.toggle('open');
+  });
+});
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.t-event').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
