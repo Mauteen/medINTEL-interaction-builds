@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Discover — Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0b0b0b;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Lexend', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Phone frame ── */
+  .phone {
+    position: relative;
+    width: 390px;
+    height: 844px;
+    overflow: hidden;
+    border-radius: 40px;
+    background: #0b0b0b;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+
+  /* ── Map tiles ── */
+  /* Pivot at screen coords (-141.44, 342.67) — derived from Figma frame structure */
+  .map-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .tile {
+    position: absolute;
+    width: 271.17px;
+    height: 271.17px;
+    display: block;
+  }
+
+  /* ── Dark scrim overlay ── */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(22,20,18,0.1);
+  }
+
+  /* ── Top nav ── */
+  .top-nav {
+    position: absolute;
+    top: 48px;
+    left: 16px;
+    right: 16px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 5;
+  }
+
+  .nav-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(22,20,18,0.6);
+    border: 1px solid #1b1b1b;
+    backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: blur(1px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .nav-btn img { width: 20px; height: 20px; }
+
+  .nav-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -0.009em;
+  }
+
+  /* ── Avatar pins ── */
+  .pin {
+    position: absolute;
+    width: 55.17px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5.52px;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 4;
+  }
+
+  .pin:active { transform: scale(0.88); }
+
+  .pin-avatar {
+    width: 55.17px;
+    height: 55.17px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: block;
+    transition: box-shadow 0.2s ease;
+  }
+
+  .pin-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .pin.selected .pin-avatar {
+    box-shadow: 0 0 0 3px #D8602D, 0 0 16px rgba(216,96,45,0.4);
+  }
+
+  .pin-label {
+    background: rgba(22,20,18,0.6);
+    border-radius: 999px;
+    padding: 2.76px 5.52px;
+    font-size: 11px;
+    color: #ffebe4;
+    white-space: nowrap;
+    font-weight: 400;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* ── Bottom tab bar ── */
+  .bottom-nav {
+    position: absolute;
+    bottom: 40px;
+    left: 16px;
+    right: 16px;
+    height: 73px;
+    background: rgba(22,20,18,0.8);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid #1f1f1f;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 0 20px;
+    z-index: 10;
+  }
+
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .tab-item img { width: 24px; height: 24px; }
+
+  .tab-label {
+    font-size: 12px;
+    color: #888484;
+    font-weight: 400;
+  }
+
+  .tab-item.active .tab-label { color: #D8602D; }
+
+  /* ── Bottom sheet ── */
+  .bottom-sheet {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    background: rgba(22,20,18,0.85);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid #1f1f1f;
+    border-radius: 20px;
+    padding: 16px;
+    z-index: 15;
+    bottom: -200px;
+    transition: bottom 0.52s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .bottom-sheet.open {
+    bottom: 129px; /* 40px + 73px + 16px gap */
+  }
+
+  .sheet-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .sheet-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sheet-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .sheet-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .sheet-info { flex: 1; min-width: 0; }
+
+  .sheet-name-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .sheet-name {
+    font-size: 16px;
+    font-weight: 400;
+    color: white;
+    letter-spacing: -0.009em;
+    white-space: nowrap;
+  }
+
+  .sheet-level {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    white-space: nowrap;
+  }
+
+  .sheet-level img { width: 16px; height: 16px; }
+
+  .sheet-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #888484;
+  }
+
+  .sheet-sep {
+    width: 1px;
+    height: 12px;
+    background: rgba(136,132,132,0.5);
+    flex-shrink: 0;
+  }
+
+  .close-btn {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .close-btn img { width: 20px; height: 20px; }
+
+  .sheet-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 20px;
+  }
+
+  .btn-follow {
+    flex: 1;
+    height: 36px;
+    background: #D8602D;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #111011;
+    font-family: 'Lexend', sans-serif;
+    transition: opacity 0.15s;
+  }
+
+  .btn-follow:active { opacity: 0.75; }
+  .btn-follow img { width: 18px; height: 18px; }
+
+  .btn-chat {
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+
+  .btn-chat:active { background: rgba(255,255,255,0.1); }
+  .btn-chat img { width: 20px; height: 20px; }
+
+  /* ── Bounce keyframe for selected pin ── */
+  @keyframes pinBounce {
+    0%   { transform: scale(1); }
+    30%  { transform: scale(0.88); }
+    60%  { transform: scale(1.1); }
+    80%  { transform: scale(0.97); }
+    100% { transform: scale(1); }
+  }
+
+  .pin.bounce { animation: pinBounce 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- Map tiles (8 visible tiles out of 12 total) -->
+  <!-- Pivot point at screen (-141.44, 342.67) -->
+  <div class="map-layer">
+    <!-- Row top-top (y = -199.67): vt9, vt11 -->
+    <img class="tile" style="left:129.73px;top:-199.67px"
+         src="https://www.figma.com/api/mcp/asset/0cb05c83-6b09-49ad-8207-f0e922d486e5.png" alt="">
+    <img class="tile" style="left:-141.44px;top:-199.67px"
+         src="https://www.figma.com/api/mcp/asset/546c330e-7762-4c7a-a6b2-0276973204cd.png" alt="">
+    <!-- Row top (y = 71.5): vt, vt1 -->
+    <img class="tile" style="left:129.73px;top:71.5px"
+         src="https://www.figma.com/api/mcp/asset/995f97c7-353b-4cdc-a717-4a16ba103621.png" alt="">
+    <img class="tile" style="left:-141.44px;top:71.5px"
+         src="https://www.figma.com/api/mcp/asset/5ca399c5-ab46-46db-a413-889f0583ba38.png" alt="">
+    <!-- Row middle (y = 342.67): vt6, vt4 -->
+    <img class="tile" style="left:129.73px;top:342.67px"
+         src="https://www.figma.com/api/mcp/asset/a0fffe76-cdf1-42f6-bc6e-fdc7e4e5f9b1.png" alt="">
+    <img class="tile" style="left:-141.44px;top:342.67px"
+         src="https://www.figma.com/api/mcp/asset/604e14ca-6b23-4cb4-a057-c6c7a51c8843.png" alt="">
+    <!-- Row bottom (y = 613.84): vt7, vt5 -->
+    <img class="tile" style="left:129.73px;top:613.84px"
+         src="https://www.figma.com/api/mcp/asset/fe647fe7-96ed-4e76-b4e1-19c26341b4c9.png" alt="">
+    <img class="tile" style="left:-141.44px;top:613.84px"
+         src="https://www.figma.com/api/mcp/asset/821c884f-b2c6-42a0-97c6-1dc0f8ce8b36.png" alt="">
+  </div>
+
+  <!-- Scrim -->
+  <div class="overlay"></div>
+
+  <!-- Top nav -->
+  <div class="top-nav">
+    <div class="nav-btn">
+      <img src="https://www.figma.com/api/mcp/asset/0c529859-692f-490c-bb5f-bb86476c6e18.svg" alt="">
+    </div>
+    <span class="nav-title">Discover</span>
+    <div class="nav-btn">
+      <img src="https://www.figma.com/api/mcp/asset/c2b66146-8590-484f-a551-e18f37dd7195.svg" alt="">
+    </div>
+  </div>
+
+  <!-- Avatar pins (11 total, positions from Figma) -->
+  <div class="pin" style="left:42px;top:138px"   data-idx="0">
+    <div class="pin-avatar"><img src="https://www.figma.com/api/mcp/asset/e47dc5f8-4ae5-4ca2-bc2e-8ae4c1a6863b.png" alt=""></div>
+    <div class="pin-label">1.10km</div>
+  </div>
+  <div class="pin" style="left:164px;top:188px"  data-idx="1">
+    <div class="pin-avatar"><img src="https://www.figma.com/api/mcp/asset/ec290099-702b-40ab-9894-9cbe98c9126d.png" alt=""></div>
+    <div class="pin-label">2.1km</div>
+  </div>
+  <div class="pin" style="left:272px;top:127px"  data-idx="2">
+    <div class="pin-avatar"><img src="https://www.figma.com/api/mcp/asset/19e9e3cb-bc31-4b1d-9791-a09491b15011.png" alt=""></div>
+    <div class="pin-label">1.60km</div>
+  </div>
+  <div class="pin" style="left:299px;top:384px"  data-idx="3">
+    <div class="pin-avatar"><img src="https://www.figma.com/api/mcp/asset/3b15b08a-ac20-4567-ae09-1d88905dea06.png" alt=""></div>
+    <div class="pin-label">1.7km</div>
+  </div>
+  <div class="pin" style="left:178px;top:627px"  data-idx="4">
+    <div class="pin-avatar"><img src="https://www.figma.com/api/mcp/asset/3b15b08a-ac20-4567-ae09-1d88905dea06.png" alt=""></div>
+    <div class="pin-label">2.01km</div>
+  </div>
+  <div class="pin" style="left:32px;top:274px"   data-idx="5">
+    <div class="pin-avatar"><img src="https://www.figma.com/api/mcp/asset/c34b2a2a-15e1-43ed-92ec-3599370a04fc.png" alt=""></div>
+    <div class="pin-label">2.11km</div>
+  </div>
+  <div class="pin" style="left:60px;top:415px"   data-idx="6">
+    <div class="pin-avatar"><img src="https://www.figma.com/api/mcp/asset/8f2829d2-f957-4ed6-8f8f-d7e9cc0595d3.png" alt=""></div>
+    <div class="pin-label">2.8km</div>
+  </div>
+  <div class="pin" style="left:159px;top:356px"  data-idx="7">
+    <div class="pin-avatar"><img src="https://www.figma.com/api/mcp/asset/f56925cf-d7dd-401d-bba4-3220b7598b9d.png" alt=""></div>
+    <div class="pin-label">3.41km</div>
+  </div>
+  <div class="pin" style="left:278px;top:251px"  data-idx="8">
+    <div class="pin-avatar"><img src="https://www.figma.com/api/mcp/asset/f56925cf-d7dd-401d-bba4-3220b7598b9d.png" alt=""></div>
+    <div class="pin-label">1.20km</div>
+  </div>
+  <div class="pin" style="left:254px;top:501px"  data-idx="9">
+    <div class="pin-avatar"><img src="https://www.figma.com/api/mcp/asset/3a5fccf7-9e5e-42c9-82cc-2b3431474306.png" alt=""></div>
+    <div class="pin-label">3.20km</div>
+  </div>
+  <div class="pin" style="left:61px;top:564px"   data-idx="10">
+    <div class="pin-avatar"><img src="https://www.figma.com/api/mcp/asset/626a842c-1bc4-4ffe-947f-29c52460f354.png" alt=""></div>
+    <div class="pin-label">1.1km</div>
+  </div>
+
+  <!-- Bottom sheet -->
+  <div class="bottom-sheet" id="sheet">
+    <div class="sheet-row">
+      <div class="sheet-user">
+        <div class="sheet-avatar">
+          <img id="sheetAvatar" src="" alt="">
+        </div>
+        <div class="sheet-info">
+          <div class="sheet-name-row">
+            <span class="sheet-name" id="sheetName"></span>
+            <span class="sheet-level">
+              <img src="https://www.figma.com/api/mcp/asset/e47918c9-272e-47ba-9fbe-a0e12877c3ca.svg" alt="">
+              <span id="sheetLevel"></span>
+            </span>
+          </div>
+          <div class="sheet-meta">
+            <span id="sheetLocation"></span>
+            <div class="sheet-sep"></div>
+            <span id="sheetDistance"></span>
+          </div>
+        </div>
+      </div>
+      <button class="close-btn" id="closeBtn">
+        <img src="https://www.figma.com/api/mcp/asset/1bda1002-4f82-47f5-8fd6-3fa17898a908.svg" alt="Close">
+      </button>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-follow">
+        <img src="https://www.figma.com/api/mcp/asset/7788212a-b5a8-4aee-a23c-3f382c79f517.svg" alt="">
+        Follow
+      </button>
+      <button class="btn-chat">
+        <img src="https://www.figma.com/api/mcp/asset/cd1b4bb7-77bf-4625-b02d-7f56228ccf41.svg" alt="">
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom tab bar -->
+  <div class="bottom-nav">
+    <div class="tab-item">
+      <img src="https://www.figma.com/api/mcp/asset/0afb5832-6995-4fb6-a51c-0e0c3f899cbd.svg" alt="">
+      <span class="tab-label">Feed</span>
+    </div>
+    <div class="tab-item active">
+      <img src="https://www.figma.com/api/mcp/asset/59c85cc9-50c7-46ca-9516-14ec0c03dddc.svg" alt="">
+      <span class="tab-label">Discover</span>
+    </div>
+    <div class="tab-item">
+      <img src="https://www.figma.com/api/mcp/asset/ee132362-5a93-4ac6-9f2e-8e17b09230f0.svg" alt="">
+      <span class="tab-label">Workouts</span>
+    </div>
+    <div class="tab-item">
+      <img src="https://www.figma.com/api/mcp/asset/f31841e4-e5a4-476a-9af8-149c5b48af4f.svg" alt="">
+      <span class="tab-label">Chat</span>
+    </div>
+    <div class="tab-item">
+      <img src="https://www.figma.com/api/mcp/asset/dd0fe53c-2e1c-4fa8-86b3-8d08117ac00e.svg" alt="">
+      <span class="tab-label">Profile</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const people = [
+  { name: 'Tunde Williams',   level: 'Elite Level',    location: 'Yaba, Sabo Rd',              distance: '1.1 mi away',  avatar: 'e47dc5f8-4ae5-4ca2-bc2e-8ae4c1a6863b' },
+  { name: 'Aisha Bello',      level: 'Pro Level',      location: 'Surulere, Itire Rd',          distance: '2.1 mi away',  avatar: 'ec290099-702b-40ab-9894-9cbe98c9126d' },
+  { name: 'Emeka Okafor',     level: 'Elite Level',    location: 'Victoria Island, Adeola',     distance: '1.6 mi away',  avatar: '19e9e3cb-bc31-4b1d-9791-a09491b15011' },
+  { name: 'Ngozi Eze',        level: 'Intermediate',   location: 'Lekki, Admiralty Way',        distance: '1.7 mi away',  avatar: '3b15b08a-ac20-4567-ae09-1d88905dea06' },
+  { name: 'Babatunde Obi',    level: 'Elite Level',    location: 'Gbagada, Phase 2',            distance: '2.0 mi away',  avatar: '3b15b08a-ac20-4567-ae09-1d88905dea06' },
+  { name: 'Fatima Umar',      level: 'Pro Level',      location: 'Ikeja, Allen Ave',            distance: '2.1 mi away',  avatar: 'c34b2a2a-15e1-43ed-92ec-3599370a04fc' },
+  { name: 'Chuka Nweze',      level: 'Beginner',       location: 'Maryland, Mobolaji Bank St',  distance: '2.8 mi away',  avatar: '8f2829d2-f957-4ed6-8f8f-d7e9cc0595d3' },
+  { name: 'Sola Adeyemi',     level: 'Elite Level',    location: 'Ikorodu Rd, Fadeyi',          distance: '3.4 mi away',  avatar: 'f56925cf-d7dd-401d-bba4-3220b7598b9d' },
+  { name: 'Kemi Osei',        level: 'Pro Level',      location: 'Kofo Abayomi, V/I',           distance: '1.2 mi away',  avatar: 'f56925cf-d7dd-401d-bba4-3220b7598b9d' },
+  { name: 'Hammerhead',       level: 'Elite Level',    location: 'Ikeja, Opebi Link Bridge',    distance: '0.3 mi away',  avatar: '8359af34-2e4f-4a38-a647-999f5c69c3d6' },
+  { name: 'Bayo Cole',        level: 'Pro Level',      location: 'Ojuelegba, Western Ave',      distance: '1.1 mi away',  avatar: '626a842c-1bc4-4ffe-947f-29c52460f354' },
+];
+
+const sheet     = document.getElementById('sheet');
+const sheetName = document.getElementById('sheetName');
+const sheetLevel= document.getElementById('sheetLevel');
+const sheetLoc  = document.getElementById('sheetLocation');
+const sheetDist = document.getElementById('sheetDistance');
+const sheetAvatar = document.getElementById('sheetAvatar');
+const closeBtn  = document.getElementById('closeBtn');
+
+let activePinEl = null;
+
+document.querySelectorAll('.pin').forEach(pin => {
+  pin.addEventListener('click', () => {
+    const idx  = +pin.dataset.idx;
+    const p    = people[idx];
+
+    // bounce & select
+    if (activePinEl) activePinEl.classList.remove('selected', 'bounce');
+    pin.classList.remove('bounce');
+    void pin.offsetWidth; // reflow
+    pin.classList.add('selected', 'bounce');
+    activePinEl = pin;
+
+    // fill sheet
+    sheetAvatar.src   = `https://www.figma.com/api/mcp/asset/${p.avatar}.png`;
+    sheetName.textContent  = p.name;
+    sheetLevel.textContent = p.level;
+    sheetLoc.textContent   = p.location;
+    sheetDist.textContent  = p.distance;
+
+    sheet.classList.add('open');
+  });
+});
+
+closeBtn.addEventListener('click', closeSheet);
+
+function closeSheet() {
+  sheet.classList.remove('open');
+  if (activePinEl) {
+    activePinEl.classList.remove('selected');
+    activePinEl = null;
+  }
+}
+</script>
+</body>
+</html>
