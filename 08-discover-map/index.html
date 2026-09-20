@@ -185,19 +185,24 @@
     position: absolute;
     left: 16px;
     right: 16px;
-    background: rgba(22,20,18,0.85);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border: 1px solid #1f1f1f;
+    background: rgba(22,20,18,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.07);
     border-radius: 20px;
     padding: 16px;
     z-index: 15;
-    bottom: -200px;
-    transition: bottom 0.52s cubic-bezier(0.34,1.56,0.64,1);
+    bottom: 129px;
+    transform: scale(0.04);
+    transform-origin: center bottom;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+    will-change: transform, opacity;
   }
 
-  .bottom-sheet.open {
-    bottom: 129px; /* 40px + 73px + 16px gap */
+  .sheet-content {
+    transition: none;
   }
 
   .sheet-row {
@@ -347,6 +352,15 @@
   }
 
   .pin.bounce { animation: pinBounce 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+  @keyframes pinReturn {
+    0%   { transform: scale(1); }
+    25%  { transform: scale(1.18); }
+    55%  { transform: scale(0.9); }
+    80%  { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  .pin.returning .pin-avatar { animation: pinReturn 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
 </style>
 </head>
 <body>
@@ -440,6 +454,7 @@
 
   <!-- Bottom sheet -->
   <div class="bottom-sheet" id="sheet">
+  <div class="sheet-content" id="sheetContent">
     <div class="sheet-row">
       <div class="sheet-user">
         <div class="sheet-avatar">
@@ -473,6 +488,7 @@
         <img src="https://www.figma.com/api/mcp/asset/cd1b4bb7-77bf-4625-b02d-7f56228ccf41.svg" alt="">
       </button>
     </div>
+  </div>
   </div>
 
   <!-- Bottom tab bar -->
@@ -516,48 +532,117 @@ const people = [
   { name: 'Bayo Cole',        level: 'Pro Level',      location: 'Ojuelegba, Western Ave',      distance: '1.1 mi away',  avatar: '626a842c-1bc4-4ffe-947f-29c52460f354' },
 ];
 
-const sheet     = document.getElementById('sheet');
-const sheetName = document.getElementById('sheetName');
-const sheetLevel= document.getElementById('sheetLevel');
-const sheetLoc  = document.getElementById('sheetLocation');
-const sheetDist = document.getElementById('sheetDistance');
+const phone       = document.querySelector('.phone');
+const sheet       = document.getElementById('sheet');
+const sheetContent= document.getElementById('sheetContent');
+const sheetName   = document.getElementById('sheetName');
+const sheetLevel  = document.getElementById('sheetLevel');
+const sheetLoc    = document.getElementById('sheetLocation');
+const sheetDist   = document.getElementById('sheetDistance');
 const sheetAvatar = document.getElementById('sheetAvatar');
-const closeBtn  = document.getElementById('closeBtn');
+const closeBtn    = document.getElementById('closeBtn');
+
+const SPRING = 'cubic-bezier(0.34,1.56,0.64,1)';
+const EASE_IN = 'cubic-bezier(0.4,0,1,1)';
+const EASE_OUT = 'cubic-bezier(.22,1,.36,1)';
 
 let activePinEl = null;
+let closing = false;
+
+function calcOrigin(pin) {
+  const phoneRect = phone.getBoundingClientRect();
+  const pinRect   = pin.getBoundingClientRect();
+
+  // Pin center in phone-local coords
+  const pinX = (pinRect.left + pinRect.width  / 2) - phoneRect.left;
+  const pinY = (pinRect.top  + pinRect.height / 2) - phoneRect.top;
+
+  // Sheet sits at bottom:129px; compute its top edge
+  const sheetH   = sheet.offsetHeight;
+  const sheetTop  = phone.clientHeight - 129 - sheetH;
+  const sheetLeft = 16;
+
+  // transform-origin is relative to the sheet's own box
+  return `${pinX - sheetLeft}px ${pinY - sheetTop}px`;
+}
+
+function showContent() {
+  sheetContent.style.transition = `opacity 0.28s ${EASE_OUT}, transform 0.32s ${EASE_OUT}`;
+  sheetContent.style.opacity    = '1';
+  sheetContent.style.transform  = 'translateY(0)';
+}
+
+function hideContent(cb) {
+  sheetContent.style.transition = `opacity 0.12s ease, transform 0.12s ease`;
+  sheetContent.style.opacity    = '0';
+  sheetContent.style.transform  = 'translateY(6px)';
+  setTimeout(cb, 120);
+}
+
+function openSheet(pin) {
+  const p = people[+pin.dataset.idx];
+
+  // Pin bounce + select
+  if (activePinEl && activePinEl !== pin) activePinEl.classList.remove('selected','bounce','returning');
+  pin.classList.remove('bounce');
+  void pin.offsetWidth;
+  pin.classList.add('selected','bounce');
+  activePinEl = pin;
+
+  // Fill content (while still invisible)
+  sheetContent.style.transition = 'none';
+  sheetContent.style.opacity    = '0';
+  sheetContent.style.transform  = 'translateY(10px)';
+  sheetAvatar.src          = `https://www.figma.com/api/mcp/asset/${p.avatar}.png`;
+  sheetName.textContent    = p.name;
+  sheetLevel.textContent   = p.level;
+  sheetLoc.textContent     = p.location;
+  sheetDist.textContent    = p.distance;
+
+  // Set origin to pin's position
+  sheet.style.transformOrigin = calcOrigin(pin);
+
+  // Spring open
+  sheet.style.transition  = `transform 0.52s ${SPRING}, opacity 0.18s ease`;
+  sheet.style.transform   = 'scale(1)';
+  sheet.style.opacity     = '1';
+  sheet.style.pointerEvents = 'auto';
+
+  // Stagger content in after sheet expands
+  setTimeout(showContent, 210);
+}
+
+function closeSheet() {
+  if (!activePinEl || closing) return;
+  closing = true;
+
+  const pinToReturn = activePinEl;
+
+  // Content out first
+  hideContent(() => {
+    // Sheet collapses back toward pin origin
+    sheet.style.transition    = `transform 0.36s ${EASE_IN}, opacity 0.22s ease`;
+    sheet.style.transform     = 'scale(0.04)';
+    sheet.style.opacity       = '0';
+    sheet.style.pointerEvents = 'none';
+
+    // Pin absorbs it back
+    setTimeout(() => {
+      pinToReturn.classList.remove('selected','bounce');
+      void pinToReturn.offsetWidth;
+      pinToReturn.classList.add('returning');
+      setTimeout(() => pinToReturn.classList.remove('returning'), 520);
+      activePinEl = null;
+      closing = false;
+    }, 300);
+  });
+}
 
 document.querySelectorAll('.pin').forEach(pin => {
-  pin.addEventListener('click', () => {
-    const idx  = +pin.dataset.idx;
-    const p    = people[idx];
-
-    // bounce & select
-    if (activePinEl) activePinEl.classList.remove('selected', 'bounce');
-    pin.classList.remove('bounce');
-    void pin.offsetWidth; // reflow
-    pin.classList.add('selected', 'bounce');
-    activePinEl = pin;
-
-    // fill sheet
-    sheetAvatar.src   = `https://www.figma.com/api/mcp/asset/${p.avatar}.png`;
-    sheetName.textContent  = p.name;
-    sheetLevel.textContent = p.level;
-    sheetLoc.textContent   = p.location;
-    sheetDist.textContent  = p.distance;
-
-    sheet.classList.add('open');
-  });
+  pin.addEventListener('click', () => openSheet(pin));
 });
 
 closeBtn.addEventListener('click', closeSheet);
-
-function closeSheet() {
-  sheet.classList.remove('open');
-  if (activePinEl) {
-    activePinEl.classList.remove('selected');
-    activePinEl = null;
-  }
-}
 </script>
 </body>
 </html>
