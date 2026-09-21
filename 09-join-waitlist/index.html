@@ -31,9 +31,9 @@ body {
 .card {
   width: 440px;
   background: #1a1a19;
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 24px;
-  padding: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 8px;
   position: relative;
   overflow: hidden;
 
@@ -48,7 +48,7 @@ body {
 /* ── Hero block ── */
 .card-hero {
   background: #111110;
-  border-radius: 18px;
+  border-radius: 12px;
   padding: 36px 28px 32px;
   text-align: center;
   display: flex;
@@ -124,19 +124,18 @@ body {
   animation: lineIn 0.48s var(--ease) 0.96s forwards;
 }
 .form-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.35);
   text-align: center;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
 }
 
 .input-row {
-  background: #111110;
-  border: 1px solid #272727;
-  border-radius: 16px;
-  height: 54px;
+  background: #171717;
+  border: 1px solid #323232;
+  border-radius: 12px;
+  height: 48px;
   display: flex;
   align-items: center;
   padding: 6px 6px 6px 16px;
@@ -166,8 +165,8 @@ body {
 
 .btn-subscribe {
   position: relative;
-  height: 42px;
-  padding: 0 20px;
+  height: 40px;
+  padding: 0 14px;
   background: var(--green);
   border: none;
   border-radius: 12px;
@@ -341,9 +340,9 @@ body {
   </div>
 
   <div class="card-form" id="cardForm">
-    <p class="form-label">Enter your email to reserve a spot</p>
+    <p class="form-label">Subscribe to our newsletter today</p>
     <div class="input-row">
-      <input type="email" id="emailInput" placeholder="you@example.com" autocomplete="off"/>
+      <input type="email" id="emailInput" placeholder="Enter your email" autocomplete="off"/>
       <div class="btn-wrap">
         <button class="btn-subscribe" id="btn" onclick="handleSubmit()">
           Subscribe
