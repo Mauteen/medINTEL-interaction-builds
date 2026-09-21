@@ -298,21 +298,41 @@ body {
 .confirmed-sub {
   font-size: 14px;
   color: rgba(255,255,255,0.4);
-  line-height: 1.65;
+  line-height: 1.4;
   max-width: 280px;
   opacity: 0;
   transform: translateY(10px);
 }
 .confirmed-spot {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: rgba(34,197,94,0.08);
   border: 1px solid rgba(34,197,94,0.15);
   border-radius: 999px;
-  padding: 6px 16px;
+  padding: 6px 16px 6px 8px;
   opacity: 0;
   transform: translateY(8px);
+}
+.spot-avatars {
+  display: flex;
+}
+.spot-avatar {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid #1a1a19;
+  background: #2a2a29;
+  margin-left: -5px;
+  font-size: 7px;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.5);
+  overflow: hidden;
+}
+.spot-avatar:first-child { margin-left: 0; }
+.spot-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--green);
 }
 
 .card.confirmed .confirmed-state { pointer-events: auto; }
@@ -371,7 +391,14 @@ body {
     </div>
     <h2 class="confirmed-title" id="confirmedTitle">You're on the list</h2>
     <p class="confirmed-sub" id="confirmedSub">We'll reach out the moment early access opens. Watch your inbox.</p>
-    <span class="confirmed-spot" id="confirmedSpot">✓ &nbsp;Spot #10,248 reserved</span>
+    <div class="confirmed-spot" id="confirmedSpot">
+      <div class="spot-avatars">
+        <div class="spot-avatar">M</div>
+        <div class="spot-avatar">K</div>
+        <div class="spot-avatar">T</div>
+      </div>
+      <span class="spot-text">Your spot is 10,248</span>
+    </div>
   </div>
 
 </div>
