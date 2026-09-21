@@ -566,15 +566,15 @@ function flyMail() {
     // ── Smooth 180° flip: spread over ~19% of timeline (~230ms) ──
     { transform: `translateY(calc(-50% + ${PEAK*0.99}px)) rotate(-60deg) scale(1.19)`,   offset: 0.54 },
     { transform: `translateY(calc(-50% + ${PEAK*0.98}px)) rotate(  0deg) scale(1.17)`,   offset: 0.59 },
-    { transform: `translateY(calc(-50% + ${PEAK*0.97}px)) rotate( 60deg) scale(1.17)`,   offset: 0.64 },
-    // ── Descent: gravity easeIn (slow at top → fast at bottom) ──
-    { transform: `translateY(calc(-50% + ${descY(0.10)}px)) rotate(88deg) scale(1.16)`,  offset: 0.68 },
-    { transform: `translateY(calc(-50% + ${descY(0.22)}px)) rotate(87deg) scale(1.13)`,  offset: 0.73 },
-    { transform: `translateY(calc(-50% + ${descY(0.42)}px)) rotate(86deg) scale(1.08)`,  offset: 0.80 },
-    { transform: `translateY(calc(-50% + ${descY(0.66)}px)) rotate(84deg) scale(1.02)`,  offset: 0.87 },
-    { transform: `translateY(calc(-50% + ${descY(0.86)}px)) rotate(82deg) scale(0.96)`,  offset: 0.93 },
+    { transform: `translateY(calc(-50% + ${PEAK*0.97}px)) rotate( 90deg) scale(1.17)`,   offset: 0.64 },
+    // ── Nosedive: locked straight down, gravity easeIn ──
+    { transform: `translateY(calc(-50% + ${descY(0.10)}px)) rotate(90deg) scale(1.16)`,  offset: 0.68 },
+    { transform: `translateY(calc(-50% + ${descY(0.22)}px)) rotate(90deg) scale(1.13)`,  offset: 0.73 },
+    { transform: `translateY(calc(-50% + ${descY(0.42)}px)) rotate(90deg) scale(1.08)`,  offset: 0.80 },
+    { transform: `translateY(calc(-50% + ${descY(0.66)}px)) rotate(90deg) scale(1.02)`,  offset: 0.87 },
+    { transform: `translateY(calc(-50% + ${descY(0.86)}px)) rotate(90deg) scale(0.96)`,  offset: 0.93 },
     // ── Impact ──
-    { transform: `translateY(calc(-50% + ${dY}px)) rotate(78deg) scale(0.88)`,           offset: 1    },
+    { transform: `translateY(calc(-50% + ${dY}px)) rotate(90deg) scale(0.88)`,           offset: 1    },
   ], { duration: DURATION, easing: 'linear', fill: 'forwards' });
 
   // Exhaust: tracks rocket, flips direction after the 180° turn
@@ -597,9 +597,9 @@ function flyMail() {
 
     // Rocket pops and fades at impact
     my.animate([
-      { transform: `translateY(calc(-50% + ${dY}px)) rotate(70deg) scale(0.88)`, opacity: 1   },
-      { transform: `translateY(calc(-50% + ${dY}px)) rotate(0deg)  scale(1.5)`,  opacity: 0.5, offset: 0.3 },
-      { transform: `translateY(calc(-50% + ${dY}px)) rotate(0deg)  scale(0)`,    opacity: 0   },
+      { transform: `translateY(calc(-50% + ${dY}px)) rotate(90deg) scale(0.88)`, opacity: 1   },
+      { transform: `translateY(calc(-50% + ${dY}px)) rotate(90deg) scale(1.5)`,  opacity: 0.5, offset: 0.3 },
+      { transform: `translateY(calc(-50% + ${dY}px)) rotate(90deg) scale(0)`,    opacity: 0   },
     ], { duration: 400, easing: 'cubic-bezier(0.34,1.56,0.64,1)', fill: 'forwards' })
     .onfinish = () => mx.remove();
   };
