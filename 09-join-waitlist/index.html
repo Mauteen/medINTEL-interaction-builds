@@ -81,8 +81,15 @@ body {
   font-size: 9px;
   display: flex; align-items: center; justify-content: center;
   color: rgba(255,255,255,0.5);
+  overflow: hidden;
+  flex-shrink: 0;
 }
 .avatar:first-child { margin-left: 0; }
+.avatar img, .spot-avatar img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .proof-text {
   font-size: 12px;
   font-weight: 500;
@@ -355,9 +362,9 @@ body {
   <div class="card-hero" id="cardHero">
     <div class="social-proof">
       <div class="avatars">
-        <div class="avatar">M</div>
-        <div class="avatar">K</div>
-        <div class="avatar">T</div>
+        <div class="avatar"><img src="https://www.figma.com/api/mcp/asset/e60d8031-c9ca-48d4-b5f5-98572a575c17.png" alt=""></div>
+        <div class="avatar"><img src="https://www.figma.com/api/mcp/asset/1670a7ec-8725-41ee-aa91-50a9a17ab4e0.png" alt=""></div>
+        <div class="avatar"><img src="https://www.figma.com/api/mcp/asset/47e61762-6158-4e2b-8f60-176eebcd4ca9.png" alt=""></div>
       </div>
       <span class="proof-text">10,247 already joined</span>
     </div>
@@ -393,9 +400,9 @@ body {
     <p class="confirmed-sub" id="confirmedSub">We'll reach out the moment early access opens. Watch your inbox.</p>
     <div class="confirmed-spot" id="confirmedSpot">
       <div class="spot-avatars">
-        <div class="spot-avatar">M</div>
-        <div class="spot-avatar">K</div>
-        <div class="spot-avatar">T</div>
+        <div class="spot-avatar"><img src="https://www.figma.com/api/mcp/asset/317663d3-0114-41d9-9237-e263a202e08a.png" alt=""></div>
+        <div class="spot-avatar"><img src="https://www.figma.com/api/mcp/asset/f70f91d7-f997-4c48-be2c-99fbe8cb00df.png" alt=""></div>
+        <div class="spot-avatar"><img src="https://www.figma.com/api/mcp/asset/35939601-b444-436d-9f8d-0437c2105121.png" alt=""></div>
       </div>
       <span class="spot-text">Your spot is 10,248</span>
     </div>
