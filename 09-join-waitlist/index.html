@@ -385,14 +385,18 @@ function easeIn(t) { return t * t * t; }
 // Ease-out for X drift
 function easeInOut(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
 
-// Position for exhaust spawning — matches the "up then down" rocket path
+// Position for exhaust — mirrors the X locking logic in flyMail
 function rocketPos(t, sx, sy, ex, ey) {
   const ARC = -330;
-  // X: drift to target during ascent, lock there for descent
-  const xT = Math.min(t * 2, 1);
-  const x  = sx + (ex - sx) * easeInOut(xT);
-  // Y: parabolic sine for smooth arc
-  const y  = sy + (ey - sy) * t + ARC * Math.sin(Math.PI * t);
+  let x;
+  if (t < 0.46) {
+    x = sx;                                           // straight up
+  } else if (t < 0.65) {
+    x = sx + (ex - sx) * ((t - 0.46) / 0.19);       // shift during flip
+  } else {
+    x = ex;                                           // straight down
+  }
+  const y = sy + (ey - sy) * t + ARC * Math.sin(Math.PI * t);
   return { x, y };
 }
 
@@ -540,12 +544,13 @@ function flyMail() {
   mx.appendChild(my);
   document.body.appendChild(mx);
 
-  // X: ease to target during ascent, completely locked for the vertical dive
+  // X: locked during ascent (goes straight up), shifts to target DURING the flip,
+  // then locked again for descent (straight down) — both legs are perfectly vertical
   mx.animate([
-    { transform: 'translateX(-50%)',                         offset: 0    },
-    { transform: `translateX(calc(-50% + ${dX*0.5}px))`,    offset: 0.22 },
-    { transform: `translateX(calc(-50% + ${dX}px))`,        offset: 0.46 },
-    { transform: `translateX(calc(-50% + ${dX}px))`,        offset: 1    },
+    { transform: 'translateX(-50%)',                          offset: 0    },
+    { transform: 'translateX(-50%)',                          offset: 0.46 },
+    { transform: `translateX(calc(-50% + ${dX}px))`,         offset: 0.65 },
+    { transform: `translateX(calc(-50% + ${dX}px))`,         offset: 1    },
   ], { duration: DURATION, easing: 'linear', fill: 'forwards' });
 
   // Helper: gravity easeIn for descent — t goes 0→1, returns 0→1 with slow-top/fast-bottom
