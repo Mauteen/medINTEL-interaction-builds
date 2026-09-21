@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Join Waitlist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green:  #22C55E;
+    --ease:   cubic-bezier(0.22, 1, 0.36, 1);
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  body {
+    font-family: 'Jost', sans-serif;
+    background: #111110;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Card ── */
+  .card {
+    width: 432px;
+    background: #212121;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+
+    /* entrance state */
+    opacity: 0;
+    transform: translateY(36px) scale(0.96);
+    animation: cardIn 0.65s var(--ease) 0.1s forwards;
+  }
+
+  @keyframes cardIn {
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ── Title block ── */
+  .card-hero {
+    background: #111110;
+    border-radius: 14px;
+    padding: 32px 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(34,197,94,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: lineIn 0.5s var(--ease) 0.55s forwards;
+  }
+
+  .card-icon svg {
+    width: 24px;
+    height: 24px;
+    stroke: var(--green);
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .card-title {
+    font-size: 32px;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.2;
+    opacity: 0;
+    transform: translateY(18px);
+    animation: lineIn 0.52s var(--ease) 0.68s forwards;
+  }
+
+  .card-sub {
+    font-size: 15px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.6;
+    max-width: 320px;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: lineIn 0.52s var(--ease) 0.8s forwards;
+  }
+
+  @keyframes lineIn {
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ── Input section ── */
+  .card-form {
+    padding: 20px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(14px);
+    animation: lineIn 0.52s var(--ease) 0.94s forwards;
+  }
+
+  .form-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.45);
+    text-align: center;
+    letter-spacing: 0.01em;
+  }
+
+  .input-row {
+    background: #171717;
+    border: 1px solid #2e2e2e;
+    border-radius: 14px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    padding: 6px 6px 6px 14px;
+    gap: 6px;
+    transition: border-color 0.2s ease;
+  }
+  .input-row:focus-within { border-color: rgba(34,197,94,0.35); }
+
+  .input-row input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: 'Jost', sans-serif;
+    font-size: 14px;
+    color: #fff;
+    min-width: 0;
+  }
+  .input-row input::placeholder { color: #555; }
+  .input-row input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Subscribe button ── */
+  .btn-subscribe {
+    position: relative;
+    flex-shrink: 0;
+    height: 40px;
+    min-width: 108px;
+    padding: 0 16px;
+    background: var(--green);
+    border: none;
+    border-radius: 10px;
+    font-family: 'Jost', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #111;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.2s ease, transform 0.15s ease, min-width 0.45s var(--ease);
+    overflow: hidden;
+  }
+  .btn-subscribe:hover:not(:disabled) { background: #16a34a; transform: scale(1.02); }
+  .btn-subscribe:active:not(:disabled) { transform: scale(0.97); }
+  .btn-subscribe:disabled { cursor: not-allowed; }
+
+  .btn-label { transition: opacity 0.15s ease; white-space: nowrap; }
+  .btn-icon  { width: 15px; height: 15px; transition: opacity 0.15s ease; flex-shrink: 0; }
+
+  /* Spinner */
+  .btn-spinner {
+    position: absolute;
+    width: 18px; height: 18px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-top-color: #111;
+    border-radius: 50%;
+    opacity: 0;
+    animation: none;
+  }
+  .btn-subscribe.loading .btn-label,
+  .btn-subscribe.loading .btn-icon  { opacity: 0; }
+  .btn-subscribe.loading .btn-spinner {
+    opacity: 1;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Success state */
+  .btn-subscribe.success {
+    min-width: 40px;
+    background: var(--green);
+    animation: btnPop 0.5s var(--spring) forwards;
+  }
+  .btn-subscribe.success .btn-label,
+  .btn-subscribe.success .btn-icon,
+  .btn-subscribe.success .btn-spinner { opacity: 0; }
+
+  @keyframes btnPop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.12); }
+    70%  { transform: scale(0.95); }
+    100% { transform: scale(1); }
+  }
+
+  /* Checkmark drawn in SVG */
+  .btn-check {
+    position: absolute;
+    width: 20px; height: 20px;
+    opacity: 0;
+    transition: opacity 0.15s ease 0.1s;
+  }
+  .btn-check path {
+    fill: none;
+    stroke: #111;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
+  }
+  .btn-subscribe.success .btn-check {
+    opacity: 1;
+  }
+  .btn-subscribe.success .btn-check path {
+    animation: drawCheck 0.4s var(--ease) 0.18s forwards;
+  }
+  @keyframes drawCheck {
+    to { stroke-dashoffset: 0; }
+  }
+
+  /* ── Confirmed state — full card swap ── */
+  .confirmed-state {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+    padding: 32px 24px 28px;
+  }
+
+  .confirmed-icon {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: rgba(34,197,94,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: iconPulse 0.6s var(--spring) forwards;
+  }
+  .confirmed-icon svg {
+    width: 28px; height: 28px;
+    stroke: var(--green);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .confirmed-icon svg path {
+    stroke-dasharray: 30;
+    stroke-dashoffset: 30;
+    animation: drawCheck 0.45s var(--ease) 0.25s forwards;
+  }
+
+  @keyframes iconPulse {
+    0%   { transform: scale(0.6); opacity: 0; }
+    60%  { transform: scale(1.12); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+
+  .confirmed-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #fff;
+    animation: lineIn 0.45s var(--ease) 0.3s both;
+  }
+  .confirmed-sub {
+    font-size: 14px;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.6;
+    max-width: 280px;
+    animation: lineIn 0.45s var(--ease) 0.42s both;
+  }
+  .confirmed-tag {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--green);
+    background: rgba(34,197,94,0.1);
+    border-radius: 999px;
+    padding: 5px 14px;
+    animation: lineIn 0.45s var(--ease) 0.54s both;
+  }
+
+  .card.confirmed .card-hero,
+  .card.confirmed .card-form { display: none; }
+  .card.confirmed .confirmed-state { display: flex; }
+
+  /* ripple on confirm */
+  .ripple {
+    position: fixed;
+    border-radius: 50%;
+    background: rgba(34,197,94,0.15);
+    transform: scale(0);
+    animation: rippleOut 0.7s var(--ease) forwards;
+    pointer-events: none;
+  }
+  @keyframes rippleOut {
+    to { transform: scale(1); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card" id="card">
+
+  <!-- Hero block -->
+  <div class="card-hero">
+    <div class="card-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+    <h1 class="card-title">Join Waitlist</h1>
+    <p class="card-sub">Join 10k+ users in the waitlist to get early access and enjoy premium benefits.</p>
+  </div>
+
+  <!-- Form -->
+  <div class="card-form">
+    <p class="form-label">Subscribe to our newsletter today</p>
+    <div class="input-row">
+      <input type="email" id="emailInput" placeholder="Enter your email" autocomplete="off"/>
+      <button class="btn-subscribe" id="btn" onclick="handleSubmit()">
+        <span class="btn-label">Subscribe</span>
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+        <div class="btn-spinner"></div>
+        <svg class="btn-check" viewBox="0 0 20 20">
+          <path d="M4 10.5l4.5 4.5 7.5-9"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Confirmed state -->
+  <div class="confirmed-state">
+    <div class="confirmed-icon">
+      <svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
+    </div>
+    <h2 class="confirmed-title">You're on the list</h2>
+    <p class="confirmed-sub">We'll let you know the moment early access opens. Keep an eye on your inbox.</p>
+    <span class="confirmed-tag">🎉 &nbsp;Spot reserved</span>
+  </div>
+
+</div>
+
+<script>
+const btn   = document.getElementById('btn');
+const input = document.getElementById('emailInput');
+const card  = document.getElementById('card');
+
+function spawnRipple() {
+  const r = document.createElement('div');
+  const btnRect = btn.getBoundingClientRect();
+  const size = Math.max(window.innerWidth, window.innerHeight) * 2.4;
+  r.className = 'ripple';
+  r.style.cssText = `
+    width: ${size}px; height: ${size}px;
+    left: ${btnRect.left + btnRect.width / 2 - size / 2}px;
+    top:  ${btnRect.top  + btnRect.height / 2 - size / 2}px;
+  `;
+  document.body.appendChild(r);
+  setTimeout(() => r.remove(), 750);
+}
+
+function handleSubmit() {
+  if (btn.classList.contains('loading') || btn.classList.contains('success')) return;
+
+  // loading
+  btn.classList.add('loading');
+  btn.disabled = true;
+  input.disabled = true;
+
+  setTimeout(() => {
+    // success button state
+    btn.classList.remove('loading');
+    btn.classList.add('success');
+    spawnRipple();
+
+    // swap to confirmed card state after button animation lands
+    setTimeout(() => {
+      card.classList.add('confirmed');
+    }, 820);
+
+  }, 1300);
+}
+
+// allow Enter key
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleSubmit();
+});
+</script>
+</body>
+</html>
