@@ -519,8 +519,8 @@ function flyMail() {
   const endX   = cardRect.left + cardRect.width  / 2;
   const endY   = cardRect.top  + cardRect.height / 2;
 
-  const DURATION = 1050; // slightly longer to let the flip be visible
-  const PEAK     = -340; // how high above start the apex is
+  const DURATION = 1200;
+  const PEAK     = -340;
   const dX       = endX - startX;
   const dY       = endY - startY;
 
@@ -540,33 +540,41 @@ function flyMail() {
   mx.appendChild(my);
   document.body.appendChild(mx);
 
-  // X: drift to target during ascent (0→52%), hold locked during descent (52→100%)
-  // This makes the descent feel vertical — like it's coming straight down
+  // X: ease to target during ascent, completely locked for the vertical dive
   mx.animate([
-    { transform: 'translateX(-50%)',                                   offset: 0    },
-    { transform: `translateX(calc(-50% + ${dX * 0.45}px))`,           offset: 0.25 },
-    { transform: `translateX(calc(-50% + ${dX}px))`,                  offset: 0.52 },
-    { transform: `translateX(calc(-50% + ${dX}px))`,                  offset: 1    },
+    { transform: 'translateX(-50%)',                         offset: 0    },
+    { transform: `translateX(calc(-50% + ${dX*0.5}px))`,    offset: 0.22 },
+    { transform: `translateX(calc(-50% + ${dX}px))`,        offset: 0.46 },
+    { transform: `translateX(calc(-50% + ${dX}px))`,        offset: 1    },
   ], { duration: DURATION, easing: 'linear', fill: 'forwards' });
 
-  // Y + rotation:
-  //   0  →  46%: ascent  — points UP   (rotate −90°)
-  //   46% → 58%: FLIP    — 180° turn at apex (−90° → +90°)
-  //   58% → 100%: descent — points DOWN (rotate +90°), accelerating
+  // Helper: gravity easeIn for descent — t goes 0→1, returns 0→1 with slow-top/fast-bottom
+  const g = t => t * t * t; // cubic ease-in = gravity feel
+
+  // Descent starts at offset 0.65, so map into it
+  const descY = f => PEAK + (dY - PEAK) * g(f);
+
   const yAnim = my.animate([
-    { transform: 'translateY(-50%) rotate(-30deg) scale(1)',                                       offset: 0    },
-    { transform: `translateY(calc(-50% - 50px)) rotate(-68deg) scale(1.08)`,                      offset: 0.10 },
-    { transform: `translateY(calc(-50% + ${PEAK * 0.62}px)) rotate(-84deg) scale(1.16)`,          offset: 0.30 },
-    // Peak — pointing straight up, brief hover
-    { transform: `translateY(calc(-50% + ${PEAK}px)) rotate(-90deg) scale(1.2)`,                  offset: 0.46 },
-    { transform: `translateY(calc(-50% + ${PEAK * 0.99}px)) rotate(-90deg) scale(1.2)`,           offset: 0.50 },
-    // 180° FLIP — rocket turns to face down
-    { transform: `translateY(calc(-50% + ${PEAK * 0.98}px)) rotate(90deg) scale(1.2)`,            offset: 0.58 },
-    // Descent — pointing down, accelerating
-    { transform: `translateY(calc(-50% + ${PEAK * 0.46}px)) rotate(84deg) scale(1.12)`,           offset: 0.72 },
-    { transform: `translateY(calc(-50% + ${dY * 0.6}px)) rotate(78deg) scale(1.02)`,              offset: 0.88 },
-    // Impact
-    { transform: `translateY(calc(-50% + ${dY}px)) rotate(70deg) scale(0.88)`,                    offset: 1    },
+    // ── Ascent ──
+    { transform: 'translateY(-50%) rotate(-28deg) scale(1)',                              offset: 0    },
+    { transform: `translateY(calc(-50% - 55px)) rotate(-65deg) scale(1.08)`,             offset: 0.09 },
+    { transform: `translateY(calc(-50% + ${PEAK*0.58}px)) rotate(-82deg) scale(1.15)`,   offset: 0.28 },
+    { transform: `translateY(calc(-50% + ${PEAK*0.93}px)) rotate(-88deg) scale(1.19)`,   offset: 0.40 },
+    // ── Peak — hang a moment pointing straight up ──
+    { transform: `translateY(calc(-50% + ${PEAK}px)) rotate(-90deg) scale(1.21)`,        offset: 0.46 },
+    { transform: `translateY(calc(-50% + ${PEAK}px)) rotate(-90deg) scale(1.21)`,        offset: 0.50 },
+    // ── Smooth 180° flip: spread over ~19% of timeline (~230ms) ──
+    { transform: `translateY(calc(-50% + ${PEAK*0.99}px)) rotate(-60deg) scale(1.19)`,   offset: 0.54 },
+    { transform: `translateY(calc(-50% + ${PEAK*0.98}px)) rotate(  0deg) scale(1.17)`,   offset: 0.59 },
+    { transform: `translateY(calc(-50% + ${PEAK*0.97}px)) rotate( 60deg) scale(1.17)`,   offset: 0.64 },
+    // ── Descent: gravity easeIn (slow at top → fast at bottom) ──
+    { transform: `translateY(calc(-50% + ${descY(0.10)}px)) rotate(88deg) scale(1.16)`,  offset: 0.68 },
+    { transform: `translateY(calc(-50% + ${descY(0.22)}px)) rotate(87deg) scale(1.13)`,  offset: 0.73 },
+    { transform: `translateY(calc(-50% + ${descY(0.42)}px)) rotate(86deg) scale(1.08)`,  offset: 0.80 },
+    { transform: `translateY(calc(-50% + ${descY(0.66)}px)) rotate(84deg) scale(1.02)`,  offset: 0.87 },
+    { transform: `translateY(calc(-50% + ${descY(0.86)}px)) rotate(82deg) scale(0.96)`,  offset: 0.93 },
+    // ── Impact ──
+    { transform: `translateY(calc(-50% + ${dY}px)) rotate(78deg) scale(0.88)`,           offset: 1    },
   ], { duration: DURATION, easing: 'linear', fill: 'forwards' });
 
   // Exhaust: tracks rocket, flips direction after the 180° turn
@@ -576,7 +584,7 @@ function flyMail() {
   function exhaustLoop(now) {
     const t   = Math.min((now - startTime) / DURATION, 1);
     const pos = rocketPos(t, startX, startY, endX, endY);
-    const inFlip = t > 0.47 && t < 0.60; // brief pause during the flip — no exhaust
+    const inFlip = t > 0.49 && t < 0.65; // pause exhaust during the smooth flip
     if (!inFlip) spawnExhaust(pos.x, pos.y, t < 0.52);
     if (t < 1) exhaustFrame = requestAnimationFrame(exhaustLoop);
   }
