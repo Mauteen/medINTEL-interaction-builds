@@ -385,23 +385,19 @@ function easeIn(t) { return t * t * t; }
 // Ease-out for X drift
 function easeInOut(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
 
-// Parabolic position for exhaust spawning
+// Position for exhaust spawning — matches the "up then down" rocket path
 function rocketPos(t, sx, sy, ex, ey) {
-  const ARC = -320; // how high it peaks
-  const x = sx + (ex - sx) * easeInOut(t);
-  // Rocket Y: slow start, rapid climb, then arc down
-  // Achieved by blending a steep ease-in going up with a gravity fall
-  const upT   = Math.min(t / 0.5, 1);            // 0→1 over first half
-  const downT = Math.max((t - 0.5) / 0.5, 0);    // 0→1 over second half
-  const yUp   = ARC * easeIn(upT);
-  const yDown = -ARC * easeIn(downT);
-  const yBase = lerp(sy, ey, easeInOut(t));
-  const y = yBase + yUp + yDown;
+  const ARC = -330;
+  // X: drift to target during ascent, lock there for descent
+  const xT = Math.min(t * 2, 1);
+  const x  = sx + (ex - sx) * easeInOut(xT);
+  // Y: parabolic sine for smooth arc
+  const y  = sy + (ey - sy) * t + ARC * Math.sin(Math.PI * t);
   return { x, y };
 }
 
-function spawnExhaust(x, y, t) {
-  const count = t < 0.55 ? 4 : 2; // more exhaust during climb
+function spawnExhaust(x, y, ascending) {
+  const count = ascending ? 4 : 3;
   for (let i = 0; i < count; i++) {
     const d = document.createElement('div');
     const size = 3 + Math.random() * 5;
@@ -414,8 +410,9 @@ function spawnExhaust(x, y, t) {
       background:${col};
     `;
     document.body.appendChild(d);
-    const driftX = (Math.random()-0.5)*18;
-    const driftY = 20 + Math.random()*28; // exhaust drifts DOWN (opposite to flight)
+    const driftX = (Math.random()-0.5)*14;
+    // Exhaust always opposite to travel: up→drift down, down→drift up
+    const driftY = ascending ? (22 + Math.random()*26) : -(22 + Math.random()*26);
     d.animate([
       { transform: `translate(-50%,-50%) scale(1)`, opacity: 0.85 },
       { transform: `translate(calc(-50% + ${driftX}px), calc(-50% + ${driftY}px)) scale(0)`, opacity: 0 }
@@ -522,19 +519,19 @@ function flyMail() {
   const endX   = cardRect.left + cardRect.width  / 2;
   const endY   = cardRect.top  + cardRect.height / 2;
 
-  const DURATION = 750; // fast rocket
+  const DURATION = 1050; // slightly longer to let the flip be visible
+  const PEAK     = -340; // how high above start the apex is
+  const dX       = endX - startX;
+  const dY       = endY - startY;
 
-  // Outer wrapper: anchors position, X drift handled by animation
   const mx = document.createElement('div');
   mx.className = 'flying-mail-x';
   mx.style.cssText = `left:${startX}px; top:${startY}px;`;
 
-  // Inner: Y and rotation
   const my = document.createElement('div');
   my.className = 'flying-mail-y';
-  // Paper plane pointing right (send icon) — we'll rotate it via keyframes to face direction
   my.innerHTML = `
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+    <svg width="42" height="42" viewBox="0 0 24 24" fill="none"
          stroke="#22C55E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
       <line x1="22" y1="2" x2="11" y2="13"/>
       <polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -543,59 +540,59 @@ function flyMail() {
   mx.appendChild(my);
   document.body.appendChild(mx);
 
-  // ── X animation: ease-in-out (slow start, fast middle) ──
+  // X: drift to target during ascent (0→52%), hold locked during descent (52→100%)
+  // This makes the descent feel vertical — like it's coming straight down
   mx.animate([
-    { transform: 'translateX(-50%)' },
-    { transform: `translateX(calc(-50% + ${endX - startX}px))` }
-  ], { duration: DURATION, easing: 'cubic-bezier(0.4, 0, 0.5, 1)', fill: 'forwards' });
-
-  // ── Y animation: rocket profile — ignites slow, blasts up, arcs over fast ──
-  const arcPeak = -320;
-  const yEnd    = endY - startY;
-
-  const yAnim = my.animate([
-    // 0% — sitting at button, upright
-    { transform: 'translateY(-50%) rotate(-45deg) scale(1)',           offset: 0    },
-    // 8% — slow liftoff (fighting gravity feeling)
-    { transform: 'translateY(calc(-50% - 18px)) rotate(-60deg) scale(1.05)',  offset: 0.08 },
-    // 28% — full burn: rocket is screaming upward
-    { transform: `translateY(calc(-50% + ${arcPeak * 0.7}px)) rotate(-80deg) scale(1.18)`, offset: 0.28 },
-    // 48% — peak altitude, tilting to curve
-    { transform: `translateY(calc(-50% + ${arcPeak}px)) rotate(-55deg) scale(1.2)`,        offset: 0.48 },
-    // 70% — arcing over, heading toward target
-    { transform: `translateY(calc(-50% + ${lerp(arcPeak, yEnd, 0.55)}px)) rotate(-20deg) scale(1.1)`, offset: 0.70 },
-    // 88% — diving in fast
-    { transform: `translateY(calc(-50% + ${lerp(arcPeak, yEnd, 0.85)}px)) rotate(10deg) scale(1.0)`,  offset: 0.88 },
-    // 100% — impact
-    { transform: `translateY(calc(-50% + ${yEnd}px)) rotate(15deg) scale(0.85)`,           offset: 1    }
+    { transform: 'translateX(-50%)',                                   offset: 0    },
+    { transform: `translateX(calc(-50% + ${dX * 0.45}px))`,           offset: 0.25 },
+    { transform: `translateX(calc(-50% + ${dX}px))`,                  offset: 0.52 },
+    { transform: `translateX(calc(-50% + ${dX}px))`,                  offset: 1    },
   ], { duration: DURATION, easing: 'linear', fill: 'forwards' });
 
-  // ── Exhaust particle loop (rAF-driven, matches rocket math) ──
+  // Y + rotation:
+  //   0  →  46%: ascent  — points UP   (rotate −90°)
+  //   46% → 58%: FLIP    — 180° turn at apex (−90° → +90°)
+  //   58% → 100%: descent — points DOWN (rotate +90°), accelerating
+  const yAnim = my.animate([
+    { transform: 'translateY(-50%) rotate(-30deg) scale(1)',                                       offset: 0    },
+    { transform: `translateY(calc(-50% - 50px)) rotate(-68deg) scale(1.08)`,                      offset: 0.10 },
+    { transform: `translateY(calc(-50% + ${PEAK * 0.62}px)) rotate(-84deg) scale(1.16)`,          offset: 0.30 },
+    // Peak — pointing straight up, brief hover
+    { transform: `translateY(calc(-50% + ${PEAK}px)) rotate(-90deg) scale(1.2)`,                  offset: 0.46 },
+    { transform: `translateY(calc(-50% + ${PEAK * 0.99}px)) rotate(-90deg) scale(1.2)`,           offset: 0.50 },
+    // 180° FLIP — rocket turns to face down
+    { transform: `translateY(calc(-50% + ${PEAK * 0.98}px)) rotate(90deg) scale(1.2)`,            offset: 0.58 },
+    // Descent — pointing down, accelerating
+    { transform: `translateY(calc(-50% + ${PEAK * 0.46}px)) rotate(84deg) scale(1.12)`,           offset: 0.72 },
+    { transform: `translateY(calc(-50% + ${dY * 0.6}px)) rotate(78deg) scale(1.02)`,              offset: 0.88 },
+    // Impact
+    { transform: `translateY(calc(-50% + ${dY}px)) rotate(70deg) scale(0.88)`,                    offset: 1    },
+  ], { duration: DURATION, easing: 'linear', fill: 'forwards' });
+
+  // Exhaust: tracks rocket, flips direction after the 180° turn
   const startTime = performance.now();
   let exhaustFrame;
 
   function exhaustLoop(now) {
-    const t = Math.min((now - startTime) / DURATION, 1);
+    const t   = Math.min((now - startTime) / DURATION, 1);
     const pos = rocketPos(t, startX, startY, endX, endY);
-    spawnExhaust(pos.x, pos.y, t);
+    const inFlip = t > 0.47 && t < 0.60; // brief pause during the flip — no exhaust
+    if (!inFlip) spawnExhaust(pos.x, pos.y, t < 0.52);
     if (t < 1) exhaustFrame = requestAnimationFrame(exhaustLoop);
   }
   exhaustFrame = requestAnimationFrame(exhaustLoop);
 
-  // ── Impact ──
   yAnim.onfinish = () => {
     cancelAnimationFrame(exhaustFrame);
     spawnBurst(endX, endY);
-
-    // Success card blooms from impact point — simultaneous with the bounce
     revealSuccess(endX, endY);
 
-    // Bounce & fade the rocket out in parallel
+    // Rocket pops and fades at impact
     my.animate([
-      { transform: `translateY(calc(-50% + ${yEnd}px)) rotate(15deg) scale(0.85)`, opacity: 1 },
-      { transform: `translateY(calc(-50% + ${yEnd}px)) rotate(0deg)  scale(1.4)`,  opacity: 0.6, offset: 0.4 },
-      { transform: `translateY(calc(-50% + ${yEnd}px)) rotate(0deg)  scale(0)`,    opacity: 0 },
-    ], { duration: 420, easing: 'cubic-bezier(0.34,1.56,0.64,1)', fill: 'forwards' })
+      { transform: `translateY(calc(-50% + ${dY}px)) rotate(70deg) scale(0.88)`, opacity: 1   },
+      { transform: `translateY(calc(-50% + ${dY}px)) rotate(0deg)  scale(1.5)`,  opacity: 0.5, offset: 0.3 },
+      { transform: `translateY(calc(-50% + ${dY}px)) rotate(0deg)  scale(0)`,    opacity: 0   },
+    ], { duration: 400, easing: 'cubic-bezier(0.34,1.56,0.64,1)', fill: 'forwards' })
     .onfinish = () => mx.remove();
   };
 }
