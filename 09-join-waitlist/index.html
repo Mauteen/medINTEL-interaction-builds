@@ -213,7 +213,17 @@ body {
   justify-content: center;
 }
 .flying-mail-y svg {
-  filter: drop-shadow(0 4px 16px rgba(34,197,94,0.5));
+  filter: drop-shadow(0 0 12px rgba(34,197,94,0.9)) drop-shadow(0 0 32px rgba(34,197,94,0.4));
+}
+
+/* shake on ignition */
+@keyframes ignite {
+  0%   { transform: translate(-50%, -50%) rotate(0deg); }
+  20%  { transform: translate(calc(-50% - 3px), calc(-50% + 2px)) rotate(-4deg); }
+  40%  { transform: translate(calc(-50% + 3px), calc(-50% - 2px)) rotate(3deg); }
+  60%  { transform: translate(calc(-50% - 2px), calc(-50% + 1px)) rotate(-2deg); }
+  80%  { transform: translate(calc(-50% + 2px), calc(-50% - 1px)) rotate(2deg); }
+  100% { transform: translate(-50%, -50%) rotate(0deg); }
 }
 
 /* ── Impact burst ── */
@@ -222,6 +232,16 @@ body {
   border-radius: 50%;
   pointer-events: none;
   z-index: 9998;
+}
+
+/* shockwave ring */
+.shockwave {
+  position: fixed;
+  border-radius: 50%;
+  border: 2px solid rgba(34,197,94,0.7);
+  pointer-events: none;
+  z-index: 9996;
+  transform: translate(-50%, -50%) scale(0);
 }
 
 /* ── Confirmed state ── */
@@ -354,126 +374,191 @@ let busy = false;
 
 function lerp(a, b, t) { return a + (b - a) * t; }
 
-function spawnBurst(cx, cy) {
-  const count = 10;
+// Cubic ease-in: slow start → fast end (rocket acceleration feel)
+function easeIn(t) { return t * t * t; }
+// Ease-out for X drift
+function easeInOut(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+// Parabolic position for exhaust spawning
+function rocketPos(t, sx, sy, ex, ey) {
+  const ARC = -320; // how high it peaks
+  const x = sx + (ex - sx) * easeInOut(t);
+  // Rocket Y: slow start, rapid climb, then arc down
+  // Achieved by blending a steep ease-in going up with a gravity fall
+  const upT   = Math.min(t / 0.5, 1);            // 0→1 over first half
+  const downT = Math.max((t - 0.5) / 0.5, 0);    // 0→1 over second half
+  const yUp   = ARC * easeIn(upT);
+  const yDown = -ARC * easeIn(downT);
+  const yBase = lerp(sy, ey, easeInOut(t));
+  const y = yBase + yUp + yDown;
+  return { x, y };
+}
+
+function spawnExhaust(x, y, t) {
+  const count = t < 0.55 ? 4 : 2; // more exhaust during climb
   for (let i = 0; i < count; i++) {
-    const dot = document.createElement('div');
-    dot.className = 'burst-dot';
-    const angle = (i / count) * Math.PI * 2;
-    const dist  = 28 + Math.random() * 32;
-    const tx    = Math.cos(angle) * dist;
-    const ty    = Math.sin(angle) * dist;
-    const size  = 4 + Math.random() * 4;
-    const hue   = Math.random() > 0.5 ? '#22C55E' : '#86efac';
-    dot.style.cssText = `
+    const d = document.createElement('div');
+    const size = 3 + Math.random() * 5;
+    const col  = Math.random() > 0.4 ? '#22C55E' : (Math.random() > 0.5 ? '#86efac' : '#fff');
+    d.style.cssText = `
+      position:fixed; border-radius:50%; pointer-events:none; z-index:9997;
       width:${size}px; height:${size}px;
-      left:${cx - size/2}px; top:${cy - size/2}px;
-      background:${hue};
+      left:${x + (Math.random()-0.5)*12}px;
+      top:${y + (Math.random()-0.5)*8}px;
+      background:${col};
     `;
-    document.body.appendChild(dot);
-    dot.animate([
-      { transform: 'translate(0,0) scale(1)', opacity: 1 },
-      { transform: `translate(${tx}px,${ty}px) scale(0)`, opacity: 0 }
-    ], { duration: 550 + Math.random()*200, easing: 'cubic-bezier(0,0,0.2,1)', fill: 'forwards' })
-    .onfinish = () => dot.remove();
+    document.body.appendChild(d);
+    const driftX = (Math.random()-0.5)*18;
+    const driftY = 20 + Math.random()*28; // exhaust drifts DOWN (opposite to flight)
+    d.animate([
+      { transform: `translate(-50%,-50%) scale(1)`, opacity: 0.85 },
+      { transform: `translate(calc(-50% + ${driftX}px), calc(-50% + ${driftY}px)) scale(0)`, opacity: 0 }
+    ], { duration: 260 + Math.random()*140, easing: 'ease-out', fill: 'forwards' })
+    .onfinish = () => d.remove();
   }
 }
 
+function spawnBurst(cx, cy) {
+  // Big particle ring
+  const count = 18;
+  for (let i = 0; i < count; i++) {
+    const d   = document.createElement('div');
+    d.className = 'burst-dot';
+    const angle = (i / count) * Math.PI * 2;
+    const dist  = 36 + Math.random() * 48;
+    const tx    = Math.cos(angle) * dist;
+    const ty    = Math.sin(angle) * dist;
+    const size  = 3 + Math.random() * 6;
+    const col   = ['#22C55E','#86efac','#ffffff','#4ade80'][Math.floor(Math.random()*4)];
+    d.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${cx}px; top:${cy}px;
+      background:${col};
+      transform:translate(-50%,-50%);
+    `;
+    document.body.appendChild(d);
+    d.animate([
+      { transform: `translate(-50%,-50%) scale(1)`, opacity: 1 },
+      { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`, opacity: 0 }
+    ], { duration: 500 + Math.random()*250, easing: 'cubic-bezier(0,0,0.2,1)', fill: 'forwards' })
+    .onfinish = () => d.remove();
+  }
+
+  // Shockwave ring
+  const ring = document.createElement('div');
+  ring.className = 'shockwave';
+  ring.style.cssText = `left:${cx}px; top:${cy}px; width:20px; height:20px;`;
+  document.body.appendChild(ring);
+  ring.animate([
+    { transform: 'translate(-50%,-50%) scale(0)', opacity: 1 },
+    { transform: 'translate(-50%,-50%) scale(8)', opacity: 0 }
+  ], { duration: 600, easing: 'cubic-bezier(0,0,0.3,1)', fill: 'forwards' })
+  .onfinish = () => ring.remove();
+}
+
 function revealSuccess() {
-  const el = (id, delay, extra='') => {
+  const ease = (id, delay) => {
     const e = document.getElementById(id);
-    if (e) {
-      setTimeout(() => {
-        e.style.transition = `opacity 0.45s cubic-bezier(.22,1,.36,1) ${extra}, transform 0.45s cubic-bezier(.22,1,.36,1) ${extra}`;
-        e.style.opacity = '1';
-        e.style.transform = 'none';
-      }, delay);
-    }
+    if (!e) return;
+    setTimeout(() => {
+      e.style.transition = 'opacity 0.45s cubic-bezier(.22,1,.36,1), transform 0.45s cubic-bezier(.22,1,.36,1)';
+      e.style.opacity = '1';
+      e.style.transform = 'none';
+    }, delay);
   };
 
   const landed = document.getElementById('mailLanded');
-  landed.style.transition = 'opacity 0.35s var(--ease), transform 0.5s cubic-bezier(0.34,1.56,0.64,1)';
+  landed.style.transition = 'opacity 0.3s ease, transform 0.55s cubic-bezier(0.34,1.56,0.64,1)';
   landed.style.opacity = '1';
   landed.style.transform = 'scale(1)';
 
-  el('confirmedTitle', 180);
-  el('confirmedSub',   310);
-  el('confirmedSpot',  430);
+  ease('confirmedTitle', 160);
+  ease('confirmedSub',   290);
+  ease('confirmedSpot',  400);
 }
 
 function flyMail() {
   const btnRect  = btn.getBoundingClientRect();
   const cardRect = card.getBoundingClientRect();
 
-  const startX = btnRect.left + btnRect.width  / 2;
-  const startY = btnRect.top  + btnRect.height / 2;
+  const startX = btnRect.left  + btnRect.width  / 2;
+  const startY = btnRect.top   + btnRect.height / 2;
   const endX   = cardRect.left + cardRect.width  / 2;
   const endY   = cardRect.top  + cardRect.height / 2;
 
-  const DURATION = 820;
+  const DURATION = 750; // fast rocket
 
-  // Outer wrapper moves on X (linear)
+  // Outer wrapper: anchors position, X drift handled by animation
   const mx = document.createElement('div');
   mx.className = 'flying-mail-x';
   mx.style.cssText = `left:${startX}px; top:${startY}px;`;
 
-  // Inner moves on Y (arc up then down)
+  // Inner: Y and rotation
   const my = document.createElement('div');
   my.className = 'flying-mail-y';
+  // Paper plane pointing right (send icon) — we'll rotate it via keyframes to face direction
   my.innerHTML = `
-    <svg width="38" height="38" viewBox="0 0 24 24" fill="none"
-         stroke="#22C55E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="2"/>
-      <polyline points="2,4 12,13 22,4"/>
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+         stroke="#22C55E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13"/>
+      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
     </svg>`;
 
   mx.appendChild(my);
   document.body.appendChild(mx);
 
-  // Trail dots along the path
-  let trailTimer = 0;
-  const trailInterval = setInterval(() => {
-    trailTimer += 40;
-    const t  = trailTimer / DURATION;
-    if (t >= 1) { clearInterval(trailInterval); return; }
-    const tx = lerp(startX, endX, t);
-    const arcH = -180;
-    const ty = lerp(startY, endY, t) + arcH * 4 * t * (1 - t);
-    const dot = document.createElement('div');
-    dot.className = 'trail';
-    dot.style.cssText = `left:${tx-2.5}px; top:${ty-2.5}px; opacity:${0.6*(1-t)};`;
-    document.body.appendChild(dot);
-    setTimeout(() => dot.remove(), 400);
-  }, 40);
-
-  // X: linear
+  // ── X animation: ease-in-out (slow start, fast middle) ──
   mx.animate([
     { transform: 'translateX(-50%)' },
     { transform: `translateX(calc(-50% + ${endX - startX}px))` }
+  ], { duration: DURATION, easing: 'cubic-bezier(0.4, 0, 0.5, 1)', fill: 'forwards' });
+
+  // ── Y animation: rocket profile — ignites slow, blasts up, arcs over fast ──
+  const arcPeak = -320;
+  const yEnd    = endY - startY;
+
+  const yAnim = my.animate([
+    // 0% — sitting at button, upright
+    { transform: 'translateY(-50%) rotate(-45deg) scale(1)',           offset: 0    },
+    // 8% — slow liftoff (fighting gravity feeling)
+    { transform: 'translateY(calc(-50% - 18px)) rotate(-60deg) scale(1.05)',  offset: 0.08 },
+    // 28% — full burn: rocket is screaming upward
+    { transform: `translateY(calc(-50% + ${arcPeak * 0.7}px)) rotate(-80deg) scale(1.18)`, offset: 0.28 },
+    // 48% — peak altitude, tilting to curve
+    { transform: `translateY(calc(-50% + ${arcPeak}px)) rotate(-55deg) scale(1.2)`,        offset: 0.48 },
+    // 70% — arcing over, heading toward target
+    { transform: `translateY(calc(-50% + ${lerp(arcPeak, yEnd, 0.55)}px)) rotate(-20deg) scale(1.1)`, offset: 0.70 },
+    // 88% — diving in fast
+    { transform: `translateY(calc(-50% + ${lerp(arcPeak, yEnd, 0.85)}px)) rotate(10deg) scale(1.0)`,  offset: 0.88 },
+    // 100% — impact
+    { transform: `translateY(calc(-50% + ${yEnd}px)) rotate(15deg) scale(0.85)`,           offset: 1    }
   ], { duration: DURATION, easing: 'linear', fill: 'forwards' });
 
-  // Y: parabolic arc (ease-out up, ease-in down), with rotation
-  const yAnim = my.animate([
-    { transform: 'translateY(-50%) rotate(-12deg) scale(1)' },
-    { transform: `translateY(calc(-50% - 180px)) rotate(-28deg) scale(1.18)`, offset: 0.38 },
-    { transform: `translateY(calc(-50% + ${endY - startY}px)) rotate(8deg) scale(0.9)` }
-  ], { duration: DURATION, easing: 'cubic-bezier(0.4, 0, 0.6, 1)', fill: 'forwards' });
+  // ── Exhaust particle loop (rAF-driven, matches rocket math) ──
+  const startTime = performance.now();
+  let exhaustFrame;
 
+  function exhaustLoop(now) {
+    const t = Math.min((now - startTime) / DURATION, 1);
+    const pos = rocketPos(t, startX, startY, endX, endY);
+    spawnExhaust(pos.x, pos.y, t);
+    if (t < 1) exhaustFrame = requestAnimationFrame(exhaustLoop);
+  }
+  exhaustFrame = requestAnimationFrame(exhaustLoop);
+
+  // ── Impact ──
   yAnim.onfinish = () => {
-    // Impact
+    cancelAnimationFrame(exhaustFrame);
     spawnBurst(endX, endY);
 
-    // Landing bounce on the envelope
+    // Bounce on landing
     my.animate([
-      { transform: `translateY(calc(-50% + ${endY - startY}px)) rotate(8deg) scale(0.9)` },
-      { transform: `translateY(calc(-50% + ${endY - startY}px)) rotate(0deg) scale(1.2)` },
-      { transform: `translateY(calc(-50% + ${endY - startY}px)) rotate(0deg) scale(1)` },
-    ], { duration: 340, easing: 'cubic-bezier(0.34,1.56,0.64,1)', fill: 'forwards' })
+      { transform: `translateY(calc(-50% + ${yEnd}px)) rotate(15deg) scale(0.85)` },
+      { transform: `translateY(calc(-50% + ${yEnd}px)) rotate(0deg) scale(1.3)` },
+      { transform: `translateY(calc(-50% + ${yEnd}px)) rotate(0deg) scale(1.0)` },
+    ], { duration: 380, easing: 'cubic-bezier(0.34,1.56,0.64,1)', fill: 'forwards' })
     .onfinish = () => {
       mx.remove();
-      clearInterval(trailInterval);
-
-      // Swap card to success
       card.classList.add('confirmed');
       setTimeout(revealSuccess, 60);
     };
@@ -484,12 +569,20 @@ function handleSubmit() {
   if (busy) return;
   busy = true;
 
-  // Button launches
-  btn.classList.add('launched');
   input.disabled = true;
 
-  // Small delay then fly
-  setTimeout(flyMail, 160);
+  // Ignition shake on the button before it disappears
+  btn.animate([
+    { transform: 'scale(1) translateX(0)' },
+    { transform: 'scale(1.06) translateX(-2px)' },
+    { transform: 'scale(1.06) translateX(2px)' },
+    { transform: 'scale(1.06) translateX(-2px)' },
+    { transform: 'scale(1.06) translateX(0)' },
+  ], { duration: 180, easing: 'linear' })
+  .onfinish = () => {
+    btn.classList.add('launched');
+    setTimeout(flyMail, 60);
+  };
 }
 
 input.addEventListener('keydown', e => {
